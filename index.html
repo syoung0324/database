@@ -68,6 +68,12 @@
 
     <!-- Right Controls -->
     <div class="flex items-center space-x-1.5 sm:space-x-2 text-xs">
+      <!-- Admin Login Toggle Button -->
+      <button id="admin-login-trigger-btn" class="bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1.5 border border-slate-700 shrink-0">
+        <i id="admin-btn-icon" class="fa-solid fa-lock"></i>
+        <span id="admin-btn-text">管理者登入</span>
+      </button>
+
       <!-- Mode Toggle Button -->
       <button id="toggle-view-mode-btn" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1 shrink-0">
         <i id="mode-icon" class="fa-solid fa-mobile-screen-button"></i>
@@ -88,7 +94,7 @@
         回到今日
       </button>
 
-      <button id="clear-day-btn" class="bg-rose-700/80 hover:bg-rose-600 text-white px-2 py-1 rounded-lg text-xs font-medium transition shadow-sm border border-rose-600/50" title="清空當日">
+      <button id="clear-day-btn" class="hidden bg-rose-700/80 hover:bg-rose-600 text-white px-2 py-1 rounded-lg text-xs font-medium transition shadow-sm border border-rose-600/50" title="清空當日">
         <i class="fa-solid fa-trash-can"></i><span class="hidden sm:inline ml-1">清空當日</span>
       </button>
     </div>
@@ -146,6 +152,32 @@
     <button id="cancel-selection-btn" class="text-xs text-slate-400 hover:text-white px-2 py-1">
       取消
     </button>
+  </div>
+
+  <!-- Admin Login Modal -->
+  <div id="admin-login-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden">
+      <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <i class="fa-solid fa-lock text-amber-300"></i>
+          <span>管理者密碼驗證</span>
+        </h3>
+        <button id="close-admin-modal-btn" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <div class="p-5 space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">請輸入管理者密碼</label>
+          <input type="password" id="admin-password-input" placeholder="請輸入 8 位數密碼" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500">
+        </div>
+        <p id="admin-login-error" class="text-xs text-rose-600 hidden font-medium">密碼錯誤，請重新輸入！</p>
+      </div>
+      <div class="p-3 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
+        <button id="cancel-admin-login" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100">取消</button>
+        <button id="submit-admin-login" class="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium shadow transition">確認登入</button>
+      </div>
+    </div>
   </div>
 
   <!-- Booking Modal -->
@@ -240,6 +272,7 @@
     let currentEditKey = null; // Key when editing single existing booking
     let currentBookingType = 'personal';
     let isMobileView = localStorage.getItem('badminton_view_mode') === 'mobile';
+    let isAdmin = sessionStorage.getItem('badminton_is_admin') === 'true';
     let unsubscribe = null; // Firestore snapshot unsubscribe function
 
     // --- Firestore & LocalStorage Sync ---
@@ -289,6 +322,7 @@
     }
 
     function saveData() {
+      if (!isAdmin) return; // 訪客無法寫入
       // 1. 寫入 Firestore 雲端資料庫
       if (window.db) {
         const docRef = window.fsDoc(window.db, "bookings", currentDate);
@@ -325,6 +359,16 @@
     const modeText = document.getElementById('mode-text');
     const modeBadge = document.getElementById('mode-badge');
 
+    const adminLoginTriggerBtn = document.getElementById('admin-login-trigger-btn');
+    const adminBtnIcon = document.getElementById('admin-btn-icon');
+    const adminBtnText = document.getElementById('admin-btn-text');
+    const adminLoginModal = document.getElementById('admin-login-modal');
+    const closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
+    const cancelAdminLogin = document.getElementById('cancel-admin-login');
+    const submitAdminLogin = document.getElementById('submit-admin-login');
+    const adminPasswordInput = document.getElementById('admin-password-input');
+    const adminLoginError = document.getElementById('admin-login-error');
+
     const actionBar = document.getElementById('action-bar');
     const selectedCountEl = document.getElementById('selected-count');
     const openBookingModalBtn = document.getElementById('open-booking-modal-btn');
@@ -343,6 +387,65 @@
     const inputCoach = document.getElementById('input-coach');
     const inputTimeNote = document.getElementById('input-time-note');
     const modalSlotsSummary = document.getElementById('modal-slots-summary');
+
+    // --- Admin Permission UI Sync ---
+    function updateAdminUI() {
+      if (isAdmin) {
+        adminBtnText.innerText = '登出管理';
+        adminBtnIcon.className = 'fa-solid fa-unlock-keyhole text-amber-300';
+        adminLoginTriggerBtn.className = 'bg-amber-600 hover:bg-amber-500 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1.5 border border-amber-500 shrink-0';
+        clearDayBtn.classList.remove('hidden');
+        dayEventTitleInput.disabled = false;
+      } else {
+        adminBtnText.innerText = '管理者登入';
+        adminBtnIcon.className = 'fa-solid fa-lock';
+        adminLoginTriggerBtn.className = 'bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1.5 border border-slate-700 shrink-0';
+        clearDayBtn.classList.add('hidden');
+        dayEventTitleInput.disabled = true;
+        selectedCells.clear();
+        updateActionBar();
+      }
+    }
+
+    // --- Admin Login Actions ---
+    adminLoginTriggerBtn.addEventListener('click', () => {
+      if (isAdmin) {
+        if (confirm('確定要登出管理者身分嗎？')) {
+          isAdmin = false;
+          sessionStorage.removeItem('badminton_is_admin');
+          updateAdminUI();
+          renderGrid();
+        }
+      } else {
+        adminPasswordInput.value = '';
+        adminLoginError.classList.add('hidden');
+        adminLoginModal.classList.remove('hidden');
+        adminPasswordInput.focus();
+      }
+    });
+
+    closeAdminModalBtn.addEventListener('click', () => adminLoginModal.classList.add('hidden'));
+    cancelAdminLogin.addEventListener('click', () => adminLoginModal.classList.add('hidden'));
+
+    submitAdminLogin.addEventListener('click', () => {
+      if (adminPasswordInput.value === '88888888') {
+        isAdmin = true;
+        sessionStorage.setItem('badminton_is_admin', 'true');
+        adminLoginModal.classList.add('hidden');
+        updateAdminUI();
+        renderGrid();
+        alert('管理者登入成功！現在您可以進行預約與資料修改。');
+      } else {
+        adminLoginError.classList.remove('hidden');
+        adminPasswordInput.focus();
+      }
+    });
+
+    adminPasswordInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        submitAdminLogin.click();
+      }
+    });
 
     // --- Mode Toggle Function ---
     function updateViewModeUI() {
@@ -431,15 +534,15 @@
             const isSelected = selectedCells.has(slotKey);
             const booking = dayData.slots ? dayData.slots[slotKey] : null;
 
-            let slotBg = 'bg-white hover:bg-slate-50';
+            let slotBg = 'bg-white hover:bg-slate-50 cursor-pointer';
             let statusText = '<span class="text-slate-400 text-xs">可預約</span>';
 
             if (booking) {
               if (booking.type === 'club') {
-                slotBg = 'bg-amber-50 hover:bg-amber-100/80';
+                slotBg = 'bg-amber-50 hover:bg-amber-100/80 cursor-pointer';
                 statusText = `<span class="text-xs font-bold text-amber-800"><i class="fa-solid fa-users mr-1"></i>社團包場</span>`;
               } else {
-                slotBg = 'bg-emerald-50 hover:bg-emerald-100/80';
+                slotBg = 'bg-emerald-50 hover:bg-emerald-100/80 cursor-pointer';
                 const coachStr = booking.coach ? `<span class="text-emerald-700 font-normal ml-1">(${booking.coach})</span>` : '';
                 statusText = `
                   <div class="text-right">
@@ -451,11 +554,11 @@
             }
 
             if (isSelected) {
-              slotBg = 'bg-emerald-200/90 border-l-4 border-emerald-600';
+              slotBg = 'bg-emerald-200/90 border-l-4 border-emerald-600 cursor-pointer';
             }
 
             cardSlotsHtml += `
-              <div class="px-3 py-2.5 flex items-center justify-between cursor-pointer transition ${slotBg}" data-key="${slotKey}">
+              <div class="px-3 py-2.5 flex items-center justify-between transition ${slotBg}" data-key="${slotKey}">
                 <div class="flex items-center gap-2">
                   <div class="text-xs font-mono font-semibold text-slate-600">${time}</div>
                   ${isSelected ? `<i class="fa-solid fa-circle-check text-emerald-700 text-xs"></i>` : ''}
@@ -530,15 +633,27 @@
         });
       }
 
-      // Attach Click Event
+      // Attach Click Event with Permission Check
       gridTable.querySelectorAll('[data-key]').forEach(cell => {
         cell.addEventListener('click', () => {
           const key = cell.dataset.key;
           const daySlots = (bookings[currentDate] && bookings[currentDate].slots) || {};
 
           if (daySlots[key]) {
-            openEditModal(key, daySlots[key]);
+            if (isAdmin) {
+              openEditModal(key, daySlots[key]);
+            } else {
+              const b = daySlots[key];
+              const typeStr = b.type === 'club' ? '社團包場' : '學員個人練習';
+              const coachStr = b.coach ? `指導教練：${b.coach}\n` : '';
+              const noteStr = b.timeNote ? `時間備註：${b.timeNote}\n` : '';
+              alert(`【預約資訊檢視】\n類型：${typeStr}\n預約人/學員：${b.student}\n${coachStr}${noteStr}\n（目前為訪客唯讀模式，如需修改請先點擊右上角「管理者登入」）`);
+            }
           } else {
+            if (!isAdmin) {
+              alert('【提示】目前為訪客唯讀模式，無法進行預約。如需新增預約，請先點擊右上角進行「管理者登入」。');
+              return;
+            }
             if (selectedCells.has(key)) {
               selectedCells.delete(key);
             } else {
@@ -552,7 +667,7 @@
     }
 
     function updateActionBar() {
-      if (selectedCells.size > 0) {
+      if (isAdmin && selectedCells.size > 0) {
         selectedCountEl.innerText = selectedCells.size;
         actionBar.classList.remove('translate-y-24', 'opacity-0');
       } else {
@@ -562,6 +677,7 @@
 
     function renderAll() {
       datePicker.value = currentDate;
+      updateAdminUI();
       updateViewModeUI();
       renderDateTabs();
       setupFirestoreListener();
@@ -570,6 +686,7 @@
 
     // --- Modal Actions ---
     function openBatchModal() {
+      if (!isAdmin) return;
       currentEditKey = null;
       deleteBookingBtn.classList.add('hidden');
       document.getElementById('modal-title').innerText = '新增批次預約';
@@ -590,6 +707,7 @@
     }
 
     function openEditModal(key, data) {
+      if (!isAdmin) return;
       currentEditKey = key;
       deleteBookingBtn.classList.remove('hidden');
       document.getElementById('modal-title').innerText = '編輯/取消預約';
@@ -622,6 +740,7 @@
 
     // --- Save Booking Handler ---
     saveBookingBtn.addEventListener('click', () => {
+      if (!isAdmin) return;
       if (!bookings[currentDate]) {
         bookings[currentDate] = { eventTitle: dayEventTitleInput.value, slots: {} };
       }
@@ -654,6 +773,7 @@
     });
 
     deleteBookingBtn.addEventListener('click', () => {
+      if (!isAdmin) return;
       if (currentEditKey && bookings[currentDate] && bookings[currentDate].slots) {
         delete bookings[currentDate].slots[currentEditKey];
         saveData();
@@ -700,6 +820,7 @@
     });
 
     clearDayBtn.addEventListener('click', () => {
+      if (!isAdmin) return;
       if (confirm('確定要清空當日所有的預約紀錄嗎？')) {
         if (bookings[currentDate]) {
           bookings[currentDate].slots = {};
@@ -710,6 +831,7 @@
     });
 
     dayEventTitleInput.addEventListener('change', (e) => {
+      if (!isAdmin) return;
       if (!bookings[currentDate]) {
         bookings[currentDate] = { eventTitle: '', slots: {} };
       }

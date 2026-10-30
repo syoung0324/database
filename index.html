@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>羽球場個人練習與預約統計系統</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Firebase SDK (Modular) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAtBfUkMGlHPkLNv41Mfz9IXRMu9xm5kgk",
+      authDomain: "songlin-7f563.firebaseapp.com",
+      projectId: "songlin-7f563",
+      storageBucket: "songlin-7f563.firebasestorage.app",
+      messagingSenderId: "732508622635",
+      appId: "1:732508622635:web:e698e19ebed37097b97f6e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 掛載至全域變數供主程式調用
+    window.db = db;
+    window.fsDoc = doc;
+    window.fsGetDoc = getDoc;
+    window.fsSetDoc = setDoc;
+    window.fsOnSnapshot = onSnapshot;
+
+    window.dispatchEvent(new Event('firebase-init'));
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    
+    /* Custom Scrollbar */
+    .grid-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+    .grid-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+    .grid-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .grid-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* Sticky Columns and Headers */
+    .sticky-col { position: sticky; left: 0; z-index: 20; }
+    .sticky-header { position: sticky; top: 0; z-index: 10; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 h-screen flex flex-col overflow-hidden">
+
+  <!-- Header -->
+  <header class="bg-emerald-800 text-white px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between shadow-md shrink-0 gap-2">
+    <div class="flex items-center space-x-2.5">
+      <div class="bg-emerald-600 p-1.5 rounded-lg flex items-center justify-center shrink-0">
+        <i class="fa-solid fa-table text-lg text-emerald-100"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-sm sm:text-base leading-tight flex items-center gap-1.5">
+          <span>羽球場預約統計系統</span>
+          <span id="mode-badge" class="text-[10px] bg-emerald-700/80 text-emerald-200 px-1.5 py-0.5 rounded font-normal border border-emerald-600">Excel 模式</span>
+        </h1>
+        <p class="text-[10px] sm:text-[11px] text-emerald-200">格式對齊：Y 軸場地 / X 軸時間段 (07:00 ~ 21:00)</p>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center space-x-1.5 sm:space-x-2 text-xs">
+      <!-- Mode Toggle Button -->
+      <button id="toggle-view-mode-btn" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1 shrink-0">
+        <i id="mode-icon" class="fa-solid fa-mobile-screen-button"></i>
+        <span id="mode-text">切換手機模式</span>
+      </button>
+
+      <div class="flex items-center bg-emerald-900/60 rounded-lg p-0.5 border border-emerald-700">
+        <button id="prev-day-btn" class="px-2 py-1 rounded hover:bg-emerald-700 transition text-emerald-200 hover:text-white" title="前一天">
+          <i class="fa-solid fa-chevron-left text-xs"></i>
+        </button>
+        <input type="date" id="date-picker" class="bg-transparent text-white text-xs px-1 py-0.5 focus:outline-none cursor-pointer font-medium w-24 sm:w-auto">
+        <button id="next-day-btn" class="px-2 py-1 rounded hover:bg-emerald-700 transition text-emerald-200 hover:text-white" title="後一天">
+          <i class="fa-solid fa-chevron-right text-xs"></i>
+        </button>
+      </div>
+
+      <button id="today-btn" class="hidden sm:inline-block bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-xs font-medium transition shadow-sm border border-emerald-600">
+        回到今日
+      </button>
+
+      <button id="clear-day-btn" class="bg-rose-700/80 hover:bg-rose-600 text-white px-2 py-1 rounded-lg text-xs font-medium transition shadow-sm border border-rose-600/50" title="清空當日">
+        <i class="fa-solid fa-trash-can"></i><span class="hidden sm:inline ml-1">清空當日</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Quick Date Tabs Bar (Excel Sheet Style) -->
+  <nav class="bg-slate-200 border-b border-slate-300 px-2 py-1 flex items-center gap-1 overflow-x-auto text-xs shrink-0" id="date-tabs-bar">
+    <!-- JS Rendered Tabs -->
+  </nav>
+
+  <!-- Super Eye-Catching Event Header Notice Banner -->
+  <div class="bg-indigo-950 text-white px-3 sm:px-4 py-1.5 border-b border-indigo-900 flex items-center justify-between gap-2.5 shrink-0 shadow-inner">
+    <div class="flex items-center gap-2 flex-1">
+      <div class="bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded text-[10px] sm:text-[11px] tracking-wider flex items-center gap-1 shrink-0 uppercase shadow">
+        <i class="fa-solid fa-trophy"></i>
+        <span>今日賽事/活動</span>
+      </div>
+      <div class="relative flex-1 max-w-md">
+        <input type="text" id="day-event-title" placeholder="點擊設定活動標記 (如：摩亞盃...)" class="w-full bg-indigo-900/80 hover:bg-indigo-900 text-amber-300 font-extrabold text-xs sm:text-sm px-2.5 py-1 rounded border border-amber-400/50 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400/30 transition placeholder-indigo-300/60 tracking-wide">
+      </div>
+    </div>
+
+    <div class="hidden sm:flex items-center gap-3 text-[11px] font-medium text-indigo-200 shrink-0 border-l border-indigo-800/80 pl-3">
+      <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-emerald-100 border border-emerald-400 inline-block shadow-sm"></span> 個練預約</span>
+      <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-amber-100 border border-amber-400 inline-block shadow-sm"></span> 社團包場</span>
+      <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-white border border-slate-300 inline-block shadow-sm"></span> 空白可選</span>
+    </div>
+  </div>
+
+  <!-- Main Excel / Mobile Grid Area -->
+  <main class="flex-1 overflow-auto grid-scroll p-2 sm:p-4 pb-24 bg-slate-100 flex flex-col">
+    <div id="main-container" class="bg-white rounded-lg shadow-md border border-slate-300 overflow-hidden flex-1 flex flex-col min-w-[1000px]">
+      
+      <!-- Table Header & Body -->
+      <div id="grid-table" class="divide-y divide-slate-200 flex-1 flex flex-col">
+        <!-- JS Dynamic Table Construction -->
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Selection Action Bar (Floating Footer) -->
+  <div id="action-bar" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-4 sm:px-5 py-2.5 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 translate-y-24 opacity-0 z-30 border border-slate-700 w-[90%] max-w-md justify-between sm:justify-start">
+    <div class="text-xs shrink-0">
+      已選取 <span id="selected-count" class="font-bold text-amber-400 text-sm">0</span> 格
+    </div>
+
+    <div class="h-4 w-[1px] bg-slate-700 hidden sm:block"></div>
+
+    <button id="open-booking-modal-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 shadow">
+      <i class="fa-solid fa-pen-to-square"></i>
+      <span>填寫預約資料</span>
+    </button>
+
+    <button id="cancel-selection-btn" class="text-xs text-slate-400 hover:text-white px-2 py-1">
+      取消
+    </button>
+  </div>
+
+  <!-- Booking Modal -->
+  <div id="booking-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+      <div class="p-4 bg-emerald-800 text-white flex items-center justify-between">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <i class="fa-solid fa-calendar-check"></i>
+          <span id="modal-title">新增/編輯預約</span>
+        </h3>
+        <button id="close-modal-btn" class="text-emerald-200 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div id="modal-slots-summary" class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-600 font-mono max-h-24 overflow-y-auto">
+          <!-- Slots List -->
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">預約類型</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="type-personal-btn" class="py-1.5 px-3 border border-emerald-600 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-medium text-center transition">
+              學員個人練習
+            </button>
+            <button type="button" id="type-club-btn" class="py-1.5 px-3 border border-slate-300 bg-white text-slate-600 rounded-lg text-xs font-medium text-center transition hover:bg-slate-50">
+              社團包場
+            </button>
+          </div>
+        </div>
+
+        <div id="personal-fields" class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">學員姓名 <span class="text-rose-500">*</span></label>
+            <input type="text" id="input-student" placeholder="例如：峻誠、仁皓、宣菲" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">指導教練</label>
+            <input type="text" id="input-coach" placeholder="例如：彭教練、盧教練、陳教練" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">精確時間備註 <span class="text-slate-400 font-normal">(選填)</span></label>
+            <input type="text" id="input-time-note" placeholder="例如：18:20-19:20 (非整點時填寫)" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          </div>
+        </div>
+
+        <div id="club-fields" class="hidden">
+          <p class="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-md border border-amber-200">
+            選取時段將標記為「社團」，適用於團體活動或社團包場。
+          </p>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+        <button id="delete-booking-btn" class="hidden text-xs text-rose-600 hover:text-rose-700 font-medium flex items-center gap-1">
+          <i class="fa-solid fa-trash-can"></i> 取消此預約
+        </button>
+        <div class="flex gap-2 ml-auto">
+          <button id="cancel-modal-action" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100">取消</button>
+          <button id="save-booking-btn" class="px-4 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-medium shadow transition">確認儲存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Application Constants & State ---
+    const COURTS = ['場地1', '場地2', '場地3'];
+    const TIME_SLOTS = [
+      '07:00 ~ 08:00',
+      '08:00 ~ 09:00',
+      '09:00 ~ 10:00',
+      '10:00 ~ 11:00',
+      '11:00 ~ 12:00',
+      '12:00 ~ 13:00',
+      '13:00 ~ 14:00',
+      '14:00 ~ 15:00',
+      '15:00 ~ 16:00',
+      '16:00 ~ 17:00',
+      '17:00 ~ 18:00',
+      '18:00 ~ 19:00',
+      '19:00 ~ 20:00',
+      '20:00 ~ 21:00'
+    ];
+
+    let currentDate = new Date().toISOString().split('T')[0];
+    let selectedCells = new Set(); // Stores "courtIndex_timeIndex"
+    let bookings = {}; // Format: { "YYYY-MM-DD": { eventTitle: "", slots: { "court_time": { student, coach, timeNote, type } } } }
+    let currentEditKey = null; // Key when editing single existing booking
+    let currentBookingType = 'personal';
+    let isMobileView = localStorage.getItem('badminton_view_mode') === 'mobile';
+    let unsubscribe = null; // Firestore snapshot unsubscribe function
+
+    // --- Firestore & LocalStorage Sync ---
+    function setupFirestoreListener() {
+      if (!window.db) {
+        loadLocalStorageFallback();
+        renderAll();
+        return;
+      }
+
+      if (unsubscribe) {
+        unsubscribe(); // 取消上一個日期的監聽
+      }
+
+      if (!bookings[currentDate]) {
+        bookings[currentDate] = { eventTitle: '', slots: {} };
+      }
+
+      const docRef = window.fsDoc(window.db, "bookings", currentDate);
+      unsubscribe = window.fsOnSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          bookings[currentDate] = docSnap.data();
+        } else {
+          // 初始化預設範例資料 (僅限今日且完全空白時)
+          if (currentDate === new Date().toISOString().split('T')[0] && Object.keys(bookings[currentDate].slots || {}).length === 0) {
+            bookings[currentDate] = {
+              eventTitle: '摩亞盃',
+              slots: {
+                '0_11': { student: '弈寬', coach: '彭教練', timeNote: '18:20-19:20', type: 'personal' },
+                '0_12': { student: '峻誠', coach: '彭教練', timeNote: '', type: 'personal' },
+                '1_11': { student: '展誠', coach: '彭教練', timeNote: '', type: 'personal' },
+                '2_12': { student: '宇澄', coach: '盧教練', timeNote: '19:00-20:00', type: 'personal' }
+              }
+            };
+            saveData();
+          } else {
+            bookings[currentDate] = { eventTitle: '', slots: {} };
+          }
+        }
+        renderGrid();
+        dayEventTitleInput.value = bookings[currentDate].eventTitle || '';
+      }, (error) => {
+        console.error("Firestore 監聽失敗，改用 LocalStorage:", error);
+        loadLocalStorageFallback();
+        renderAll();
+      });
+    }
+
+    function saveData() {
+      // 1. 寫入 Firestore 雲端資料庫
+      if (window.db) {
+        const docRef = window.fsDoc(window.db, "bookings", currentDate);
+        window.fsSetDoc(docRef, bookings[currentDate] || { eventTitle: '', slots: {} })
+          .catch(err => console.error("Firestore 儲存失敗:", err));
+      }
+      // 2. 同步備份至 LocalStorage
+      localStorage.setItem('badminton_excel_bookings', JSON.stringify(bookings));
+    }
+
+    function loadLocalStorageFallback() {
+      const saved = localStorage.getItem('badminton_excel_bookings');
+      if (saved) {
+        try { bookings = JSON.parse(saved); } catch(e) { bookings = {}; }
+      }
+      if (!bookings[currentDate]) {
+        bookings[currentDate] = { eventTitle: '', slots: {} };
+      }
+    }
+
+    // --- DOM Elements ---
+    const datePicker = document.getElementById('date-picker');
+    const prevDayBtn = document.getElementById('prev-day-btn');
+    const nextDayBtn = document.getElementById('next-day-btn');
+    const todayBtn = document.getElementById('today-btn');
+    const clearDayBtn = document.getElementById('clear-day-btn');
+    const dateTabsBar = document.getElementById('date-tabs-bar');
+    const dayEventTitleInput = document.getElementById('day-event-title');
+    const gridTable = document.getElementById('grid-table');
+    const mainContainer = document.getElementById('main-container');
+    
+    const toggleViewModeBtn = document.getElementById('toggle-view-mode-btn');
+    const modeIcon = document.getElementById('mode-icon');
+    const modeText = document.getElementById('mode-text');
+    const modeBadge = document.getElementById('mode-badge');
+
+    const actionBar = document.getElementById('action-bar');
+    const selectedCountEl = document.getElementById('selected-count');
+    const openBookingModalBtn = document.getElementById('open-booking-modal-btn');
+    const cancelSelectionBtn = document.getElementById('cancel-selection-btn');
+
+    const bookingModal = document.getElementById('booking-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const cancelModalAction = document.getElementById('cancel-modal-action');
+    const saveBookingBtn = document.getElementById('save-booking-btn');
+    const deleteBookingBtn = document.getElementById('delete-booking-btn');
+    const typePersonalBtn = document.getElementById('type-personal-btn');
+    const typeClubBtn = document.getElementById('type-club-btn');
+    const personalFields = document.getElementById('personal-fields');
+    const clubFields = document.getElementById('club-fields');
+    const inputStudent = document.getElementById('input-student');
+    const inputCoach = document.getElementById('input-coach');
+    const inputTimeNote = document.getElementById('input-time-note');
+    const modalSlotsSummary = document.getElementById('modal-slots-summary');
+
+    // --- Mode Toggle Function ---
+    function updateViewModeUI() {
+      if (isMobileView) {
+        modeIcon.className = 'fa-solid fa-desktop';
+        modeText.innerText = '切換電腦模式';
+        modeBadge.innerText = '手機清單模式';
+        modeBadge.className = 'text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-medium border border-amber-500/40';
+        
+        mainContainer.className = 'bg-transparent rounded-none shadow-none border-none overflow-visible w-full';
+        gridTable.className = 'block space-y-3';
+      } else {
+        modeIcon.className = 'fa-solid fa-mobile-screen-button';
+        modeText.innerText = '切換手機模式';
+        modeBadge.innerText = 'Excel 模式';
+        modeBadge.className = 'text-[10px] bg-emerald-700/80 text-emerald-200 px-1.5 py-0.5 rounded font-normal border border-emerald-600';
+        
+        mainContainer.className = 'bg-white rounded-lg shadow-md border border-slate-300 overflow-hidden flex-1 flex flex-col min-w-[1000px]';
+        gridTable.className = 'divide-y divide-slate-200 flex-1 flex flex-col';
+      }
+    }
+
+    toggleViewModeBtn.addEventListener('click', () => {
+      isMobileView = !isMobileView;
+      localStorage.setItem('badminton_view_mode', isMobileView ? 'mobile' : 'desktop');
+      updateViewModeUI();
+      renderGrid();
+    });
+
+    // --- Render Functions ---
+    function renderDateTabs() {
+      dateTabsBar.innerHTML = '';
+      const curr = new Date(currentDate);
+      
+      for (let i = -3; i <= 3; i++) {
+        const d = new Date(curr);
+        d.setDate(d.getDate() + i);
+        const dStr = d.toISOString().split('T')[0];
+        
+        const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+        const label = `${d.getMonth()+1}/${d.getDate()} (${weekDays[d.getDay()]})`;
+        const isActive = dStr === currentDate;
+
+        const tab = document.createElement('button');
+        tab.className = `px-2.5 py-1 rounded-t-md font-medium text-xs transition border-t border-x shrink-0 ${
+          isActive 
+            ? 'bg-white text-emerald-800 border-slate-300 font-bold shadow-sm' 
+            : 'bg-slate-200 hover:bg-slate-100 text-slate-600 border-transparent'
+        }`;
+        tab.innerText = label;
+        tab.onclick = () => {
+          currentDate = dStr;
+          datePicker.value = currentDate;
+          selectedCells.clear();
+          setupFirestoreListener();
+          renderDateTabs();
+          updateActionBar();
+        };
+        dateTabsBar.appendChild(tab);
+      }
+    }
+
+    function renderGrid() {
+      gridTable.innerHTML = '';
+      const dayData = bookings[currentDate] || { eventTitle: '', slots: {} };
+      
+      dayEventTitleInput.value = dayData.eventTitle || '';
+
+      if (isMobileView) {
+        // --- Mobile List View (Grouped by Courts 1, 2, 3) ---
+        COURTS.forEach((courtName, cIdx) => {
+          const courtCard = document.createElement('div');
+          courtCard.className = 'mb-4 bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden';
+          
+          let cardHeaderHtml = `
+            <div class="bg-emerald-900 text-white font-bold px-3 py-2 text-xs flex items-center justify-between">
+              <span><i class="fa-solid fa-vector-square mr-1.5 text-amber-400"></i> ${courtName}</span>
+              <span class="text-[10px] text-emerald-200 font-normal">07:00 ~ 21:00 時段</span>
+            </div>
+            <div class="grid grid-cols-1 divide-y divide-slate-100">
+          `;
+
+          let cardSlotsHtml = '';
+          TIME_SLOTS.forEach((time, tIdx) => {
+            const slotKey = `${cIdx}_${tIdx}`;
+            const isSelected = selectedCells.has(slotKey);
+            const booking = dayData.slots ? dayData.slots[slotKey] : null;
+
+            let slotBg = 'bg-white hover:bg-slate-50';
+            let statusText = '<span class="text-slate-400 text-xs">可預約</span>';
+
+            if (booking) {
+              if (booking.type === 'club') {
+                slotBg = 'bg-amber-50 hover:bg-amber-100/80';
+                statusText = `<span class="text-xs font-bold text-amber-800"><i class="fa-solid fa-users mr-1"></i>社團包場</span>`;
+              } else {
+                slotBg = 'bg-emerald-50 hover:bg-emerald-100/80';
+                const coachStr = booking.coach ? `<span class="text-emerald-700 font-normal ml-1">(${booking.coach})</span>` : '';
+                statusText = `
+                  <div class="text-right">
+                    <span class="text-xs font-bold text-emerald-900">${booking.student}</span>${coachStr}
+                    ${booking.timeNote ? `<div class="text-[10px] text-emerald-700 font-mono">${booking.timeNote}</div>` : ''}
+                  </div>
+                `;
+              }
+            }
+
+            if (isSelected) {
+              slotBg = 'bg-emerald-200/90 border-l-4 border-emerald-600';
+            }
+
+            cardSlotsHtml += `
+              <div class="px-3 py-2.5 flex items-center justify-between cursor-pointer transition ${slotBg}" data-key="${slotKey}">
+                <div class="flex items-center gap-2">
+                  <div class="text-xs font-mono font-semibold text-slate-600">${time}</div>
+                  ${isSelected ? `<i class="fa-solid fa-circle-check text-emerald-700 text-xs"></i>` : ''}
+                </div>
+                <div>${statusText}</div>
+              </div>
+            `;
+          });
+
+          courtCard.innerHTML = cardHeaderHtml + cardSlotsHtml + `</div>`;
+          gridTable.appendChild(courtCard);
+        });
+
+      } else {
+        // --- Desktop Excel Grid View ---
+        // 1. Time Header Row (X-Axis)
+        const headerRow = document.createElement('div');
+        headerRow.className = 'flex bg-slate-100 text-slate-700 font-semibold text-xs border-b border-slate-300 sticky-header';
+        
+        let headerHtml = `<div class="w-20 sm:w-24 p-1.5 text-center bg-slate-200 border-r border-slate-300 shrink-0 sticky-col font-bold flex items-center justify-center text-[11px]">場地 / 時間</div>`;
+        TIME_SLOTS.forEach(time => {
+          const shortTime = time.replace(' ~ ', '-');
+          headerHtml += `<div class="flex-1 min-w-[65px] p-1 text-center border-r border-slate-200 text-[10px] xl:text-[11px] flex items-center justify-center font-mono leading-tight">${shortTime}</div>`;
+        });
+        headerRow.innerHTML = headerHtml;
+        gridTable.appendChild(headerRow);
+
+        // 2. Court Rows (Y-Axis)
+        COURTS.forEach((courtName, cIdx) => {
+          const row = document.createElement('div');
+          row.className = 'flex flex-1 border-b border-slate-200 hover:bg-slate-50/50 transition min-h-[50px]';
+
+          let rowHtml = `<div class="w-20 sm:w-24 p-2 text-center bg-slate-100 font-bold text-slate-800 border-r border-slate-300 shrink-0 sticky-col flex items-center justify-center text-xs sm:text-sm">${courtName}</div>`;
+
+          TIME_SLOTS.forEach((time, tIdx) => {
+            const slotKey = `${cIdx}_${tIdx}`;
+            const isSelected = selectedCells.has(slotKey);
+            const booking = dayData.slots ? dayData.slots[slotKey] : null;
+
+            let cellClass = 'bg-white hover:bg-slate-100 cursor-pointer';
+            let contentHtml = '';
+
+            if (booking) {
+              if (booking.type === 'club') {
+                cellClass = 'bg-amber-100/90 hover:bg-amber-200/90 border-amber-300 text-amber-900 font-bold';
+                contentHtml = `<div class="text-[11px]">社團</div>`;
+              } else {
+                cellClass = 'bg-emerald-100/90 hover:bg-emerald-200/90 border-emerald-300 text-emerald-900';
+                const coachStr = booking.coach ? `<span class="text-[10px] block opacity-80">${booking.coach}</span>` : '';
+                contentHtml = `
+                  <div class="font-bold text-[11px] leading-tight truncate px-0.5">${booking.student}</div>
+                  ${coachStr}
+                  ${booking.timeNote ? `<div class="text-[9px] text-emerald-800 font-mono scale-90 leading-none mt-0.5">${booking.timeNote}</div>` : ''}
+                `;
+              }
+            }
+
+            if (isSelected) {
+              cellClass += ' ring-2 ring-emerald-600 ring-inset bg-emerald-200/80';
+            }
+
+            rowHtml += `
+              <div class="flex-1 min-w-[65px] p-1 border-r border-slate-200 flex flex-col justify-center items-center text-center transition relative ${cellClass}" data-key="${slotKey}">
+                ${contentHtml}
+                ${isSelected ? `<i class="fa-solid fa-circle-check absolute top-0.5 right-0.5 text-emerald-700 text-[10px]"></i>` : ''}
+              </div>
+            `;
+          });
+
+          row.innerHTML = rowHtml;
+          gridTable.appendChild(row);
+        });
+      }
+
+      // Attach Click Event
+      gridTable.querySelectorAll('[data-key]').forEach(cell => {
+        cell.addEventListener('click', () => {
+          const key = cell.dataset.key;
+          const daySlots = (bookings[currentDate] && bookings[currentDate].slots) || {};
+
+          if (daySlots[key]) {
+            openEditModal(key, daySlots[key]);
+          } else {
+            if (selectedCells.has(key)) {
+              selectedCells.delete(key);
+            } else {
+              selectedCells.add(key);
+            }
+            updateActionBar();
+            renderGrid();
+          }
+        });
+      });
+    }
+
+    function updateActionBar() {
+      if (selectedCells.size > 0) {
+        selectedCountEl.innerText = selectedCells.size;
+        actionBar.classList.remove('translate-y-24', 'opacity-0');
+      } else {
+        actionBar.classList.add('translate-y-24', 'opacity-0');
+      }
+    }
+
+    function renderAll() {
+      datePicker.value = currentDate;
+      updateViewModeUI();
+      renderDateTabs();
+      setupFirestoreListener();
+      updateActionBar();
+    }
+
+    // --- Modal Actions ---
+    function openBatchModal() {
+      currentEditKey = null;
+      deleteBookingBtn.classList.add('hidden');
+      document.getElementById('modal-title').innerText = '新增批次預約';
+      
+      inputStudent.value = '';
+      inputCoach.value = '';
+      inputTimeNote.value = '';
+      setBookingType('personal');
+
+      let summaryHtml = '<div class="font-bold mb-1">已選擇以下時段格：</div>';
+      selectedCells.forEach(key => {
+        const [cIdx, tIdx] = key.split('_').map(Number);
+        summaryHtml += `<div>• ${COURTS[cIdx]} - ${TIME_SLOTS[tIdx]}</div>`;
+      });
+      modalSlotsSummary.innerHTML = summaryHtml;
+
+      bookingModal.classList.remove('hidden');
+    }
+
+    function openEditModal(key, data) {
+      currentEditKey = key;
+      deleteBookingBtn.classList.remove('hidden');
+      document.getElementById('modal-title').innerText = '編輯/取消預約';
+
+      const [cIdx, tIdx] = key.split('_').map(Number);
+      modalSlotsSummary.innerHTML = `<div class="font-bold">${COURTS[cIdx]} - ${TIME_SLOTS[tIdx]}</div>`;
+
+      setBookingType(data.type || 'personal');
+      inputStudent.value = data.student || '';
+      inputCoach.value = data.coach || '';
+      inputTimeNote.value = data.timeNote || '';
+
+      bookingModal.classList.remove('hidden');
+    }
+
+    function setBookingType(type) {
+      currentBookingType = type;
+      if (type === 'personal') {
+        typePersonalBtn.className = 'py-1.5 px-3 border border-emerald-600 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-medium text-center transition';
+        typeClubBtn.className = 'py-1.5 px-3 border border-slate-300 bg-white text-slate-600 rounded-lg text-xs font-medium text-center transition hover:bg-slate-50';
+        personalFields.classList.remove('hidden');
+        clubFields.classList.add('hidden');
+      } else {
+        typeClubBtn.className = 'py-1.5 px-3 border border-amber-600 bg-amber-50 text-amber-700 rounded-lg text-xs font-medium text-center transition';
+        typePersonalBtn.className = 'py-1.5 px-3 border border-slate-300 bg-white text-slate-600 rounded-lg text-xs font-medium text-center transition hover:bg-slate-50';
+        clubFields.classList.remove('hidden');
+        personalFields.classList.add('hidden');
+      }
+    }
+
+    // --- Save Booking Handler ---
+    saveBookingBtn.addEventListener('click', () => {
+      if (!bookings[currentDate]) {
+        bookings[currentDate] = { eventTitle: dayEventTitleInput.value, slots: {} };
+      }
+
+      const bookingPayload = {
+        type: currentBookingType,
+        student: currentBookingType === 'personal' ? inputStudent.value.trim() : '社團',
+        coach: currentBookingType === 'personal' ? inputCoach.value.trim() : '',
+        timeNote: currentBookingType === 'personal' ? inputTimeNote.value.trim() : ''
+      };
+
+      if (currentBookingType === 'personal' && !bookingPayload.student) {
+        alert('請填寫學員姓名！');
+        return;
+      }
+
+      if (currentEditKey) {
+        bookings[currentDate].slots[currentEditKey] = bookingPayload;
+      } else {
+        selectedCells.forEach(key => {
+          bookings[currentDate].slots[key] = bookingPayload;
+        });
+        selectedCells.clear();
+      }
+
+      saveData();
+      bookingModal.classList.add('hidden');
+      renderGrid();
+      updateActionBar();
+    });
+
+    deleteBookingBtn.addEventListener('click', () => {
+      if (currentEditKey && bookings[currentDate] && bookings[currentDate].slots) {
+        delete bookings[currentDate].slots[currentEditKey];
+        saveData();
+        bookingModal.classList.add('hidden');
+        renderGrid();
+      }
+    });
+
+    // --- Event Listeners ---
+    datePicker.addEventListener('change', (e) => {
+      currentDate = e.target.value;
+      selectedCells.clear();
+      renderDateTabs();
+      setupFirestoreListener();
+      updateActionBar();
+    });
+
+    prevDayBtn.addEventListener('click', () => {
+      const d = new Date(currentDate);
+      d.setDate(d.getDate() - 1);
+      currentDate = d.toISOString().split('T')[0];
+      selectedCells.clear();
+      renderDateTabs();
+      setupFirestoreListener();
+      updateActionBar();
+    });
+
+    nextDayBtn.addEventListener('click', () => {
+      const d = new Date(currentDate);
+      d.setDate(d.getDate() + 1);
+      currentDate = d.toISOString().split('T')[0];
+      selectedCells.clear();
+      renderDateTabs();
+      setupFirestoreListener();
+      updateActionBar();
+    });
+
+    todayBtn.addEventListener('click', () => {
+      currentDate = new Date().toISOString().split('T')[0];
+      selectedCells.clear();
+      renderDateTabs();
+      setupFirestoreListener();
+      updateActionBar();
+    });
+
+    clearDayBtn.addEventListener('click', () => {
+      if (confirm('確定要清空當日所有的預約紀錄嗎？')) {
+        if (bookings[currentDate]) {
+          bookings[currentDate].slots = {};
+          saveData();
+          renderGrid();
+        }
+      }
+    });
+
+    dayEventTitleInput.addEventListener('change', (e) => {
+      if (!bookings[currentDate]) {
+        bookings[currentDate] = { eventTitle: '', slots: {} };
+      }
+      bookings[currentDate].eventTitle = e.target.value;
+      saveData();
+    });
+
+    cancelSelectionBtn.addEventListener('click', () => {
+      selectedCells.clear();
+      renderGrid();
+      updateActionBar();
+    });
+
+    openBookingModalBtn.addEventListener('click', openBatchModal);
+    closeModalBtn.addEventListener('click', () => bookingModal.classList.add('hidden'));
+    cancelModalAction.addEventListener('click', () => bookingModal.classList.add('hidden'));
+
+    typePersonalBtn.addEventListener('click', () => setBookingType('personal'));
+    typeClubBtn.addEventListener('click', () => setBookingType('club'));
+
+    // --- Initialization ---
+    window.addEventListener('firebase-init', () => {
+      renderAll();
+    });
+
+    // 逾時防護機制：若 Firebase 載入稍慢，500ms 後若尚未觸發則直接用 LocalStorage 初始化
+    setTimeout(() => {
+      if (!window.db) {
+        loadLocalStorageFallback();
+        renderAll();
+      }
+    }, 500);
+  </script>
+</body>
+</html>

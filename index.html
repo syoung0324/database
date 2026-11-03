@@ -48,15 +48,15 @@
     .sticky-col { position: sticky; left: 0; z-index: 20; }
     .sticky-header { position: sticky; top: 0; z-index: 10; }
 
-    /* 跑馬燈動畫 Keyframes */
-    @keyframes marquee {
-      0% { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
+    /* 內嵌區塊內部的往返彈性跑馬燈 */
+    @keyframes bounceMarquee {
+      0% { transform: translateX(10%); }
+      100% { transform: translateX(-10%); }
     }
     .animate-marquee {
       display: inline-block;
       white-space: nowrap;
-      animation: marquee 12s linear infinite;
+      animation: bounceMarquee 6s ease-in-out infinite alternate;
     }
     .animate-marquee:hover {
       animation-play-state: paused;
@@ -125,9 +125,9 @@
         <span>今日賽事/活動備註</span>
       </div>
       
-      <div class="relative flex-1 overflow-hidden bg-indigo-900/90 rounded border border-amber-400/60 h-9 flex items-center px-2 cursor-pointer" id="marquee-container" title="點擊進行編輯">
-        <input type="text" id="day-event-title" readonly placeholder="點擊設定活動標記 (如：摩亞盃...)" class="w-full bg-transparent text-amber-300 font-black text-base sm:text-lg px-1 focus:outline-none placeholder-indigo-300/50 tracking-wide cursor-not-allowed">
-        <div id="day-event-marquee" class="hidden w-full overflow-hidden text-amber-300 font-black text-base sm:text-xl tracking-wider select-none">
+      <div class="relative flex-1 max-w-md overflow-hidden bg-indigo-900/80 hover:bg-indigo-900 rounded border border-amber-400/50 h-9 flex items-center px-2 cursor-pointer" id="marquee-container" title="點擊進行編輯">
+        <input type="text" id="day-event-title" readonly placeholder="點擊設定活動標記 (如：摩亞盃...)" class="w-full bg-transparent text-amber-300 font-extrabold text-xs sm:text-sm px-1 focus:outline-none placeholder-indigo-300/60 tracking-wide cursor-not-allowed">
+        <div id="day-event-marquee" class="hidden w-full overflow-hidden text-amber-300 font-extrabold text-xs sm:text-sm tracking-wide select-none absolute inset-0 flex items-center px-2">
           <div id="marquee-text" class="animate-marquee"></div>
         </div>
       </div>
@@ -457,7 +457,7 @@
         } else {
           if (currentDate === new Date().toISOString().split('T')[0] && Object.keys(bookings[currentDate].slots || {}).length === 0) {
             bookings[currentDate] = {
-              eventTitle: '摩亞盃',
+              eventTitle: '期中考要認真喔',
               nightOnly: false,
               slots: {
                 '0_11': { student: '以家/非非', coach: '彭教練', timeNote: '18:20-19:20', type: 'personal' },
@@ -655,7 +655,6 @@
       if (!statsStartDateInput.value) statsStartDateInput.value = currentDate;
       if (!statsEndDateInput.value) statsEndDateInput.value = currentDate;
       
-      // 開啟統計報表時，若為 custom 模式先載入該區間資料
       if (statsRangeSelect.value === 'custom') {
         const start = statsStartDateInput.value;
         const end = statsEndDateInput.value;
@@ -681,7 +680,6 @@
     
     statsTargetSelect.addEventListener('change', renderStatsData);
 
-    // 修改：當變更統計時間範圍或自訂日期時，自動載入對應區間資料並立即刷新對象清單與報表
     async function handleDateRangeChange() {
       const range = statsRangeSelect.value;
       if (range === 'custom') {

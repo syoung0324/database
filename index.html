@@ -650,11 +650,23 @@
       }
     });
 
-    openStatsBtn.addEventListener('click', () => {
+    openStatsBtn.addEventListener('click', async () => {
       if (!isAdminLoggedIn) return;
-      populateStatsTargetSelect();
       if (!statsStartDateInput.value) statsStartDateInput.value = currentDate;
       if (!statsEndDateInput.value) statsEndDateInput.value = currentDate;
+      
+      // 開啟統計報表時，若為 custom 模式先載入該區間資料
+      if (statsRangeSelect.value === 'custom') {
+        const start = statsStartDateInput.value;
+        const end = statsEndDateInput.value;
+        if (start && end && start <= end) {
+          statsLoadingOverlay.classList.remove('hidden');
+          await fetchMissingDatesData(getDateRangeArray(start, end));
+          statsLoadingOverlay.classList.add('hidden');
+        }
+      }
+
+      populateStatsTargetSelect();
       renderStatsData();
       statsModal.classList.remove('hidden');
     });
@@ -666,17 +678,31 @@
       populateStatsTargetSelect();
       renderStatsData();
     });
+    
     statsTargetSelect.addEventListener('change', renderStatsData);
-    statsRangeSelect.addEventListener('change', () => {
-      if (statsRangeSelect.value === 'custom') {
+
+    // 修改：當變更統計時間範圍或自訂日期時，自動載入對應區間資料並立即刷新對象清單與報表
+    async function handleDateRangeChange() {
+      const range = statsRangeSelect.value;
+      if (range === 'custom') {
         customDateRangeWrapper.classList.remove('hidden');
+        const start = statsStartDateInput.value;
+        const end = statsEndDateInput.value;
+        if (start && end && start <= end) {
+          statsLoadingOverlay.classList.remove('hidden');
+          await fetchMissingDatesData(getDateRangeArray(start, end));
+          statsLoadingOverlay.classList.add('hidden');
+        }
       } else {
         customDateRangeWrapper.classList.add('hidden');
       }
+      populateStatsTargetSelect();
       renderStatsData();
-    });
-    statsStartDateInput.addEventListener('change', renderStatsData);
-    statsEndDateInput.addEventListener('change', renderStatsData);
+    }
+
+    statsRangeSelect.addEventListener('change', handleDateRangeChange);
+    statsStartDateInput.addEventListener('change', handleDateRangeChange);
+    statsEndDateInput.addEventListener('change', handleDateRangeChange);
 
     function populateStatsTargetSelect() {
       const type = statsTypeSelect.value;
@@ -691,19 +717,36 @@
         });
       } else {
         const studentSet = new Set();
-        Object.keys(bookings).forEach(date => {
-          const slots = bookings[date].slots || {};
-          Object.values(slots).forEach(slot => {
+        const range = statsRangeSelect.value;
+        let targetDates = [];
+
+        if (range === 'current') {
+          targetDates = [currentDate];
+        } else if (range === 'custom') {
+          const start = statsStartDateInput.value;
+          const end = statsEndDateInput.value;
+          if (start && end && start <= end) {
+            targetDates = getDateRangeArray(start, end);
+          }
+        } else {
+          targetDates = Object.keys(bookings);
+        }
+
+        targetDates.forEach(date => {
+          const dayData = bookings[date];
+          if (!dayData || !dayData.slots) return;
+          Object.values(dayData.slots).forEach(slot => {
             if (slot.type === 'personal' && slot.student) {
               const names = slot.student.split('/').map(n => n.trim()).filter(n => n !== '');
               names.forEach(n => studentSet.add(n));
             }
           });
         });
+
         if (studentSet.size === 0) {
           const opt = document.createElement('option');
           opt.value = '';
-          opt.innerText = '-- 無學員紀錄 --';
+          opt.innerText = '-- 此區間無學員紀錄 --';
           statsTargetSelect.appendChild(opt);
         } else {
           studentSet.forEach(s => {
@@ -880,7 +923,7 @@
       }
     }
 
-    // 📥 匯出當前對象報表（自動依學員+教練分組）
+    // 📥 匯出當前對象報表
     exportExcelBtn.addEventListener('click', async () => {
       const range = statsRangeSelect.value;
       let targetDates = [];
@@ -952,7 +995,6 @@
 
       allSlots.sort((a, b) => a.date.localeCompare(b.date));
 
-      // 以「學員名稱__教練名稱」作為唯一 Key，確保不同教練分開計算
       const groupMap = {};
       allSlots.forEach(item => {
         const mapKey = `${item.student}__${item.coach}`;
@@ -1009,7 +1051,7 @@
       XLSX.writeFile(wb, `個練統計表_${target}_${currentDate}.xlsx`);
     });
 
-    // 📥 匯出全體學員總表 (.xlsx) - 自動依學員+教練獨立分組
+    // 📥 匯出全體學員總表 (.xlsx)
     exportAllStudentsExcelBtn.addEventListener('click', async () => {
       const range = statsRangeSelect.value;
       let targetDates = [];
@@ -1075,7 +1117,6 @@
 
       allSlots.sort((a, b) => a.date.localeCompare(b.date));
 
-      // 以「學員名稱__教練名稱」作為唯一 Key，讓不同教練的紀錄分開成獨立行
       const groupMap = {};
       allSlots.forEach(item => {
         const mapKey = `${item.student}__${item.coach}`;

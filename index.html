@@ -7,6 +7,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
+  <!-- SheetJS (for Excel Export) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
   <!-- Firebase SDK (Modular) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -79,13 +82,11 @@
 
     <!-- Right Controls -->
     <div class="flex items-center space-x-1.5 sm:space-x-2 text-xs">
-      <!-- 管理員登入按鈕 -->
       <button id="admin-login-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1 shrink-0">
         <i class="fa-solid fa-lock" id="admin-lock-icon"></i>
         <span id="admin-btn-text">管理員登入</span>
       </button>
 
-      <!-- Mode Toggle Button -->
       <button id="toggle-view-mode-btn" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1 shrink-0">
         <i id="mode-icon" class="fa-solid fa-mobile-screen-button"></i>
         <span id="mode-text">切換手機模式</span>
@@ -105,7 +106,6 @@
         回到今日
       </button>
 
-      <!-- 清空當日按鈕（僅管理者可使用） -->
       <button id="clear-day-btn" class="hidden bg-rose-700/80 hover:bg-rose-600 text-white px-2 py-1 rounded-lg text-xs font-medium transition shadow-sm border border-rose-600/50" title="清空當日">
         <i class="fa-solid fa-trash-can"></i><span class="hidden sm:inline ml-1">清空當日</span>
       </button>
@@ -125,7 +125,6 @@
         <span>今日賽事/活動備註</span>
       </div>
       
-      <!-- 放大與跑馬燈效果容器 -->
       <div class="relative flex-1 overflow-hidden bg-indigo-900/90 rounded border border-amber-400/60 h-9 flex items-center px-2 cursor-pointer" id="marquee-container" title="點擊進行編輯">
         <input type="text" id="day-event-title" readonly placeholder="點擊設定活動標記 (如：摩亞盃...)" class="w-full bg-transparent text-amber-300 font-black text-base sm:text-lg px-1 focus:outline-none placeholder-indigo-300/50 tracking-wide cursor-not-allowed">
         <div id="day-event-marquee" class="hidden w-full overflow-hidden text-amber-300 font-black text-base sm:text-xl tracking-wider select-none">
@@ -135,18 +134,15 @@
     </div>
 
     <div class="flex items-center gap-2 shrink-0">
-      <!-- 統計報表按鈕（限管理者登入顯示） -->
       <button id="open-stats-btn" class="hidden bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-2.5 py-1.5 rounded-lg text-xs transition shadow border border-amber-400 flex items-center gap-1">
         <i class="fa-solid fa-chart-pie"></i> 統計報表
       </button>
 
-      <!-- 僅限管理者登入後顯示的當日晚間時段切換控制 -->
       <label id="night-toggle-wrapper" class="hidden items-center gap-1.5 bg-indigo-900/80 hover:bg-indigo-900 px-3 py-1.5 rounded-lg border border-indigo-700 text-xs text-indigo-200 cursor-pointer select-none transition">
         <input type="checkbox" id="night-only-checkbox" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 accent-emerald-600 cursor-pointer">
         <span class="font-bold text-amber-300">🌙 當日僅顯示晚上 (18:00-21:00)</span>
       </label>
 
-      <!-- 管理教練名單按鈕（限管理者登入後顯示） -->
       <button id="manage-coaches-btn" class="hidden bg-indigo-700 hover:bg-indigo-600 text-white font-medium px-2.5 py-1.5 rounded-lg text-xs transition shadow border border-indigo-500 flex items-center gap-1">
         <i class="fa-solid fa-user-gear"></i> 教練管理
       </button>
@@ -207,8 +203,11 @@
 
         <div id="personal-fields" class="space-y-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">學員姓名 <span class="text-rose-500">*</span></label>
-            <input type="text" id="input-student" placeholder="例如：峻誠、仁皓、宣菲" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500">
+            <label class="block text-xs font-semibold text-slate-700 mb-1">
+              學員姓名 <span class="text-rose-500">*</span>
+              <span class="text-[10px] text-amber-700 font-normal ml-1">(1對2合練請用斜線分隔，如：以家/非非)</span>
+            </label>
+            <input type="text" id="input-student" placeholder="例如：以家/非非 或 峻誠" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500">
           </div>
 
           <div>
@@ -223,7 +222,7 @@
 
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">精確時間備註 <span class="text-slate-400 font-normal">(選填)</span></label>
-            <input type="text" id="input-time-note" placeholder="例如：18:20-19:20 (非整點時填寫)" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500">
+            <input type="text" id="input-time-note" placeholder="例如：18:20-19:20" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500">
           </div>
         </div>
 
@@ -263,26 +262,36 @@
 
   <!-- 教練管理 Modal -->
   <div id="coach-manage-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden p-5 space-y-4">
-      <div class="flex items-center justify-between border-b pb-2">
-        <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-user-gear text-indigo-600"></i> 教練名單管理</h3>
-        <button id="close-coach-modal-btn" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-base"></i></button>
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="p-4 bg-indigo-800 text-white flex items-center justify-between shrink-0">
+        <h3 class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-user-gear"></i> 教練與專屬費率管理</h3>
+        <button id="close-coach-modal-btn" class="text-indigo-200 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
       </div>
-      <div class="space-y-2 max-h-60 overflow-y-auto pr-1" id="coach-manage-list"></div>
-      <div class="flex gap-2 pt-2 border-t">
-        <input type="text" id="new-coach-input" placeholder="新增教練名稱..." class="flex-1 text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
-        <button id="add-coach-submit-btn" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-xs font-medium transition">新增</button>
+      
+      <div class="p-4 space-y-3 flex-1 overflow-y-auto">
+        <p class="text-[11px] text-slate-500 bg-slate-50 p-2 rounded border">在此可維護教練名單，並為每位教練設定專屬的 **1對1** 與 **1對2** 每小時收費標準。</p>
+        
+        <div class="space-y-2.5" id="coach-manage-list">
+          <!-- JS 動態寫入 -->
+        </div>
+      </div>
+
+      <div class="p-3 bg-slate-50 border-t flex gap-2 items-center shrink-0">
+        <input type="text" id="new-coach-input" placeholder="新教練姓名..." class="text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 w-28">
+        <input type="number" id="new-coach-1on1" placeholder="1對1費率" value="600" class="text-xs p-2 bg-white border border-slate-300 rounded-md w-20 text-right font-mono">
+        <input type="number" id="new-coach-1on2" placeholder="1對2費率" value="400" class="text-xs p-2 bg-white border border-slate-300 rounded-md w-20 text-right font-mono">
+        <button id="add-coach-submit-btn" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-xs font-bold transition shadow">新增教練</button>
       </div>
     </div>
   </div>
 
-  <!-- 統計報表 Modal (新增) -->
+  <!-- 統計報表 Modal -->
   <div id="stats-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh]">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
       <div class="p-4 bg-amber-600 text-white flex items-center justify-between shrink-0">
         <h3 class="font-bold text-sm flex items-center gap-2">
           <i class="fa-solid fa-chart-pie"></i>
-          <span>個人練習時間統計表</span>
+          <span>個人練習時間統計與收費明細</span>
         </h3>
         <button id="close-stats-modal-btn" class="text-amber-100 hover:text-white">
           <i class="fa-solid fa-xmark text-lg"></i>
@@ -290,44 +299,74 @@
       </div>
 
       <div class="p-4 space-y-4 flex-1 overflow-y-auto">
-        <!-- 控制選擇區域 -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">統計類型</label>
-            <select id="stats-type-select" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
-              <option value="coach">依指導教練</option>
-              <option value="student">依學員姓名</option>
-            </select>
+        <!-- 控制與費率提示區域 -->
+        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">統計視角</label>
+              <select id="stats-type-select" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
+                <option value="coach">依指導教練</option>
+                <option value="student">依學員姓名</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">對象名稱</label>
+              <select id="stats-target-select" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
+                <!-- 動態產出 -->
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">時間範圍</label>
+              <select id="stats-range-select" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
+                <option value="all">跨日總計 (全部紀錄)</option>
+                <option value="current">僅當日統計</option>
+                <option value="custom">自訂日期區間</option>
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">對象名稱</label>
-            <select id="stats-target-select" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
-              <!-- 動態產出 -->
-            </select>
+          <div id="coach-rate-badge-wrapper" class="flex items-center justify-between bg-amber-100/60 p-2 rounded border border-amber-200 text-xs font-medium text-amber-900">
+            <div><i class="fa-solid fa-tag mr-1 text-amber-600"></i> 目前套用教練專屬費率：</div>
+            <div class="space-x-3 font-bold">
+              <span>1對1: <span id="display-rate-1on1" class="text-emerald-700 font-mono">600</span> 元/hr</span>
+              <span>1對2: <span id="display-rate-1on2" class="text-indigo-700 font-mono">400</span> 元/hr</span>
+            </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">時間範圍</label>
-            <select id="stats-range-select" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
-              <option value="all">跨日總計 (全部紀錄)</option>
-              <option value="current">僅當日統計</option>
-            </select>
+          <div id="custom-date-range-wrapper" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">開始日期</label>
+              <input type="date" id="stats-start-date" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">結束日期</label>
+              <input type="date" id="stats-end-date" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
+            </div>
           </div>
         </div>
 
         <!-- 統計摘要卡片 -->
-        <div id="stats-summary-card" class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 flex items-center justify-between">
+        <div id="stats-summary-card" class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 flex flex-wrap items-center justify-between gap-2">
           <div>
-            <span class="font-bold">統計對象：</span><span id="stats-target-label" class="font-bold text-amber-700">--</span>
+            <span class="font-bold">統計對象：</span><span id="stats-target-label" class="font-bold text-amber-700 text-sm">--</span>
           </div>
-          <div>
-            <span class="font-bold">總個練時段：</span><span id="stats-total-hours" class="font-black text-amber-700 text-base">0</span> 個時段 (約 <span id="stats-total-hours-calc">0</span> 小時)
+          <div class="flex items-center gap-3">
+            <span>1對1: <b id="stats-count-1on1" class="text-emerald-700">0</b> hr</span>
+            <span>1對2: <b id="stats-count-1on2" class="text-indigo-700">0</b> hr</span>
+            <span class="border-l border-amber-300 pl-3">結算預估總額: <b id="stats-total-fee" class="text-rose-700 text-base font-black">$0</b> 元</span>
           </div>
         </div>
 
         <!-- 詳細紀錄表格 -->
-        <div class="border border-slate-200 rounded-lg overflow-hidden">
+        <div class="border border-slate-200 rounded-lg overflow-hidden relative min-h-[140px]">
+          <div id="stats-loading-overlay" class="hidden absolute inset-0 bg-white/80 backdrop-blur-[1px] flex items-center justify-center z-10">
+            <div class="text-xs font-bold text-amber-700 flex items-center gap-2">
+              <i class="fa-solid fa-spinner fa-spin text-base"></i> 正在載入歷史資料...
+            </div>
+          </div>
+          
           <table class="w-full text-left border-collapse text-xs">
             <thead>
               <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
@@ -336,7 +375,8 @@
                 <th class="p-2 border-r">時段</th>
                 <th class="p-2 border-r">學員</th>
                 <th class="p-2 border-r">指導教練</th>
-                <th class="p-2">時間備註</th>
+                <th class="p-2 border-r">類型與單價</th>
+                <th class="p-2">原始輸入/時間備註</th>
               </tr>
             </thead>
             <tbody id="stats-table-body" class="divide-y divide-slate-100">
@@ -346,7 +386,15 @@
         </div>
       </div>
 
-      <div class="p-3 border-t border-slate-200 bg-slate-50 flex justify-end shrink-0">
+      <div class="p-3 border-t border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <div class="flex gap-2">
+          <button id="export-excel-btn" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5">
+            <i class="fa-solid fa-file-excel text-sm"></i> 📥 匯出當前對象報表
+          </button>
+          <button id="export-all-students-excel-btn" class="px-3 py-1.5 bg-indigo-700 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5" title="自動選取該時間區間內全部個練學員，輸出完整總表">
+            <i class="fa-solid fa-users-rectangle text-sm"></i> 📥 匯出全體學員總表 (.xlsx)
+          </button>
+        </div>
         <button id="close-stats-btn-bottom" class="px-4 py-1.5 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-xs font-medium transition shadow">關閉</button>
       </div>
     </div>
@@ -370,9 +418,25 @@
     let isAdminLoggedIn = false;
     let unsubscribe = null; 
 
-    let coachList = JSON.parse(localStorage.getItem('badminton_coach_list')) || [
-      '彭教練', '盧教練', '陳教練', '林教練', '黃教練'
+    let coachList = JSON.parse(localStorage.getItem('badminton_coach_list_v2')) || [
+      { name: '彭教練', rate1: 600, rate2: 400 },
+      { name: '盧教練', rate1: 600, rate2: 400 },
+      { name: '陳教練', rate1: 600, rate2: 400 },
+      { name: '林教練', rate1: 600, rate2: 400 },
+      { name: '黃教練', rate1: 600, rate2: 400 },
+      { name: '宋旻庭', rate1: 600, rate2: 400 },
+      { name: '張玲惠', rate1: 600, rate2: 400 }
     ];
+
+    if (coachList.length > 0 && typeof coachList[0] === 'string') {
+      coachList = coachList.map(cName => ({ name: cName, rate1: 600, rate2: 400 }));
+      localStorage.setItem('badminton_coach_list_v2', JSON.stringify(coachList));
+    }
+
+    function getCoachObj(coachName) {
+      const found = coachList.find(c => c.name === coachName);
+      return found || { name: coachName, rate1: 600, rate2: 400 };
+    }
 
     function setupFirestoreListener() {
       if (!window.db) {
@@ -396,7 +460,7 @@
               eventTitle: '摩亞盃',
               nightOnly: false,
               slots: {
-                '0_11': { student: '弈寬', coach: '彭教練', timeNote: '18:20-19:20', type: 'personal' },
+                '0_11': { student: '以家/非非', coach: '彭教練', timeNote: '18:20-19:20', type: 'personal' },
                 '0_12': { student: '峻誠', coach: '彭教練', timeNote: '', type: 'personal' },
                 '1_11': { student: '展誠', coach: '彭教練', timeNote: '', type: 'personal' },
                 '2_12': { student: '宇澄', coach: '盧教練', timeNote: '19:00-20:00', type: 'personal' }
@@ -473,18 +537,30 @@
     const closeCoachModalBtn = document.getElementById('close-coach-modal-btn');
     const coachManageList = document.getElementById('coach-manage-list');
     const newCoachInput = document.getElementById('new-coach-input');
+    const newCoach1on1 = document.getElementById('new-coach-1on1');
+    const newCoach1on2 = document.getElementById('new-coach-1on2');
     const addCoachSubmitBtn = document.getElementById('add-coach-submit-btn');
 
     const statsModal = document.getElementById('stats-modal');
     const closeStatsModalBtn = document.getElementById('close-stats-modal-btn');
     const closeStatsBtnBottom = document.getElementById('close-stats-btn-bottom');
+    const exportExcelBtn = document.getElementById('export-excel-btn');
+    const exportAllStudentsExcelBtn = document.getElementById('export-all-students-excel-btn');
     const statsTypeSelect = document.getElementById('stats-type-select');
     const statsTargetSelect = document.getElementById('stats-target-select');
     const statsRangeSelect = document.getElementById('stats-range-select');
+    const customDateRangeWrapper = document.getElementById('custom-date-range-wrapper');
+    const statsStartDateInput = document.getElementById('stats-start-date');
+    const statsEndDateInput = document.getElementById('stats-end-date');
+    const displayRate1on1 = document.getElementById('display-rate-1on1');
+    const displayRate1on2 = document.getElementById('display-rate-1on2');
+
     const statsTargetLabel = document.getElementById('stats-target-label');
-    const statsTotalHours = document.getElementById('stats-total-hours');
-    const statsTotalHoursCalc = document.getElementById('stats-total-hours-calc');
+    const statsCount1on1 = document.getElementById('stats-count-1on1');
+    const statsCount1on2 = document.getElementById('stats-count-1on2');
+    const statsTotalFee = document.getElementById('stats-total-fee');
     const statsTableBody = document.getElementById('stats-table-body');
+    const statsLoadingOverlay = document.getElementById('stats-loading-overlay');
 
     const actionBar = document.getElementById('action-bar');
     const selectedCountEl = document.getElementById('selected-count');
@@ -574,10 +650,11 @@
       }
     });
 
-    // 統計報表邏輯
     openStatsBtn.addEventListener('click', () => {
       if (!isAdminLoggedIn) return;
       populateStatsTargetSelect();
+      if (!statsStartDateInput.value) statsStartDateInput.value = currentDate;
+      if (!statsEndDateInput.value) statsEndDateInput.value = currentDate;
       renderStatsData();
       statsModal.classList.remove('hidden');
     });
@@ -590,7 +667,16 @@
       renderStatsData();
     });
     statsTargetSelect.addEventListener('change', renderStatsData);
-    statsRangeSelect.addEventListener('change', renderStatsData);
+    statsRangeSelect.addEventListener('change', () => {
+      if (statsRangeSelect.value === 'custom') {
+        customDateRangeWrapper.classList.remove('hidden');
+      } else {
+        customDateRangeWrapper.classList.add('hidden');
+      }
+      renderStatsData();
+    });
+    statsStartDateInput.addEventListener('change', renderStatsData);
+    statsEndDateInput.addEventListener('change', renderStatsData);
 
     function populateStatsTargetSelect() {
       const type = statsTypeSelect.value;
@@ -599,18 +685,18 @@
       if (type === 'coach') {
         coachList.forEach(c => {
           const opt = document.createElement('option');
-          opt.value = c;
-          opt.innerText = c;
+          opt.value = c.name;
+          opt.innerText = c.name;
           statsTargetSelect.appendChild(opt);
         });
       } else {
-        // 蒐集所有預約過學員的名稱
         const studentSet = new Set();
         Object.keys(bookings).forEach(date => {
           const slots = bookings[date].slots || {};
           Object.values(slots).forEach(slot => {
             if (slot.type === 'personal' && slot.student) {
-              studentSet.add(slot.student);
+              const names = slot.student.split('/').map(n => n.trim()).filter(n => n !== '');
+              names.forEach(n => studentSet.add(n));
             }
           });
         });
@@ -630,7 +716,40 @@
       }
     }
 
-    function renderStatsData() {
+    function getDateRangeArray(start, end) {
+      let arr = [];
+      let dt = new Date(start);
+      let endDt = new Date(end);
+      while (dt <= endDt) {
+        arr.push(dt.toISOString().split('T')[0]);
+        dt.setDate(dt.getDate() + 1);
+      }
+      return arr;
+    }
+
+    async function fetchMissingDatesData(targetDates) {
+      if (!window.db) return;
+      const fetchPromises = targetDates.map(async (dStr) => {
+        if (!bookings[dStr]) {
+          try {
+            const docRef = window.fsDoc(window.db, "bookings", dStr);
+            const docSnap = await window.fsGetDoc(docRef);
+            if (docSnap.exists()) {
+              bookings[dStr] = docSnap.data();
+            } else {
+              bookings[dStr] = { eventTitle: '', nightOnly: false, slots: {} };
+            }
+          } catch (e) {
+            console.error(`讀取日期 ${dStr} 資料失敗:`, e);
+          }
+        }
+      });
+      await Promise.all(fetchPromises);
+    }
+
+    let currentCalculatedMatchedSlots = [];
+
+    async function renderStatsData() {
       const type = statsTypeSelect.value;
       const target = statsTargetSelect.value;
       const range = statsRangeSelect.value;
@@ -639,45 +758,106 @@
       statsTableBody.innerHTML = '';
 
       if (!target) {
-        statsTotalHours.innerText = '0';
-        statsTotalHoursCalc.innerText = '0';
-        statsTableBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">目前無資料</td></tr>';
+        statsCount1on1.innerText = '0';
+        statsCount1on2.innerText = '0';
+        statsTotalFee.innerText = '$0';
+        displayRate1on1.innerText = '600';
+        displayRate1on2.innerText = '400';
+        statsTableBody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">目前無資料</td></tr>';
+        currentCalculatedMatchedSlots = [];
         return;
       }
 
       let matchedSlots = [];
+      let targetDates = [];
 
-      const targetDates = (range === 'current') ? [currentDate] : Object.keys(bookings);
+      if (range === 'current') {
+        targetDates = [currentDate];
+      } else if (range === 'custom') {
+        const start = statsStartDateInput.value;
+        const end = statsEndDateInput.value;
+        if (start && end && start <= end) {
+          targetDates = getDateRangeArray(start, end);
+        } else {
+          targetDates = [];
+        }
+      } else {
+        targetDates = Object.keys(bookings);
+      }
+
+      if (range === 'custom' && targetDates.length > 0) {
+        statsLoadingOverlay.classList.remove('hidden');
+        await fetchMissingDatesData(targetDates);
+        statsLoadingOverlay.classList.add('hidden');
+      }
+
+      let count1on1 = 0;
+      let count1on2 = 0;
+      let totalCalculatedFee = 0;
 
       targetDates.forEach(dStr => {
-        const daySlots = (bookings[dStr] && bookings[dStr].slots) || {};
+        const dayData = bookings[dStr];
+        if (!dayData || !dayData.slots) return;
+        const daySlots = dayData.slots;
         Object.keys(daySlots).forEach(sKey => {
           const slot = daySlots[sKey];
-          if (slot.type === 'personal') {
-            const isMatch = (type === 'coach' && slot.coach === target) || (type === 'student' && slot.student === target);
-            if (isMatch) {
-              const [cIdx, tIdx] = sKey.split('_').map(Number);
-              matchedSlots.push({
-                date: dStr,
-                court: COURTS[cIdx],
-                time: ALL_TIME_SLOTS[tIdx],
-                student: slot.student,
-                coach: slot.coach || '無',
-                timeNote: slot.timeNote || '-'
-              });
-            }
+          if (slot.type === 'personal' && slot.student) {
+            const rawStudentStr = slot.student;
+            const hasSlash = rawStudentStr.includes('/');
+            const studentList = hasSlash ? rawStudentStr.split('/').map(n => n.trim()).filter(n => n !== '') : [rawStudentStr.trim()];
+            const noteStr = slot.timeNote || '';
+            
+            const is1on2 = hasSlash;
+            const coachObj = getCoachObj(slot.coach);
+            const unitRate = is1on2 ? coachObj.rate2 : coachObj.rate1;
+
+            studentList.forEach(singleStudent => {
+              const isMatch = (type === 'coach' && slot.coach === target) || (type === 'student' && singleStudent === target);
+              if (isMatch) {
+                const [cIdx, tIdx] = sKey.split('_').map(Number);
+                const slotTypeLabel = is1on2 ? '1對2' : '1對1';
+
+                if (is1on2) count1on2 += 1;
+                else count1on1 += 1;
+
+                totalCalculatedFee += unitRate;
+
+                matchedSlots.push({
+                  date: dStr,
+                  court: COURTS[cIdx],
+                  time: ALL_TIME_SLOTS[tIdx],
+                  student: singleStudent,
+                  rawStudent: rawStudentStr,
+                  coach: slot.coach || '無',
+                  typeLabel: slotTypeLabel,
+                  unitRate: unitRate,
+                  is1on2: is1on2,
+                  timeNote: noteStr || '-'
+                });
+              }
+            });
           }
         });
       });
 
-      // 按日期升冪排序
       matchedSlots.sort((a, b) => a.date.localeCompare(b.date));
+      currentCalculatedMatchedSlots = matchedSlots;
 
-      statsTotalHours.innerText = matchedSlots.length;
-      statsTotalHoursCalc.innerText = matchedSlots.length;
+      if (type === 'coach') {
+        const activeCoachObj = getCoachObj(target);
+        displayRate1on1.innerText = activeCoachObj.rate1;
+        displayRate1on2.innerText = activeCoachObj.rate2;
+      } else {
+        displayRate1on1.innerText = '依各教練設定';
+        displayRate1on2.innerText = '依各教練設定';
+      }
+
+      statsCount1on1.innerText = count1on1;
+      statsCount1on2.innerText = count1on2;
+      statsTotalFee.innerText = `$${totalCalculatedFee.toLocaleString()}`;
 
       if (matchedSlots.length === 0) {
-        statsTableBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">查無相關預約個練紀錄</td></tr>';
+        statsTableBody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">查無相關預約個練紀錄</td></tr>';
       } else {
         matchedSlots.forEach(item => {
           const tr = document.createElement('tr');
@@ -688,12 +868,265 @@
             <td class="p-2 border-r font-mono">${item.time}</td>
             <td class="p-2 border-r font-bold text-emerald-900">${item.student}</td>
             <td class="p-2 border-r text-indigo-900">${item.coach}</td>
-            <td class="p-2 text-slate-500 font-mono">${item.timeNote}</td>
+            <td class="p-2 border-r font-medium">
+              <span class="px-1.5 py-0.5 rounded text-[11px] ${item.is1on2 ? 'bg-indigo-100 text-indigo-800' : 'bg-emerald-100 text-emerald-800'}">
+                ${item.typeLabel} ($${item.unitRate})
+              </span>
+            </td>
+            <td class="p-2 text-slate-500 font-mono">${item.rawStudent !== item.student ? `[原標記: ${item.rawStudent}] ` : ''}${item.timeNote}</td>
           `;
           statsTableBody.appendChild(tr);
         });
       }
     }
+
+    // 📥 匯出當前對象報表
+    exportExcelBtn.addEventListener('click', async () => {
+      const range = statsRangeSelect.value;
+      let targetDates = [];
+      if (range === 'current') {
+        targetDates = [currentDate];
+      } else if (range === 'custom') {
+        const start = statsStartDateInput.value;
+        const end = statsEndDateInput.value;
+        if (start && end && start <= end) {
+          targetDates = getDateRangeArray(start, end);
+        }
+      } else {
+        targetDates = Object.keys(bookings);
+      }
+
+      if (range === 'custom' && targetDates.length > 0) {
+        statsLoadingOverlay.classList.remove('hidden');
+        await fetchMissingDatesData(targetDates);
+        statsLoadingOverlay.classList.add('hidden');
+      }
+
+      const type = statsTypeSelect.value;
+      const target = statsTargetSelect.value;
+
+      let allSlots = [];
+      targetDates.forEach(dStr => {
+        const dayData = bookings[dStr];
+        if (!dayData || !dayData.slots) return;
+        Object.keys(dayData.slots).forEach(sKey => {
+          const slot = dayData.slots[sKey];
+          if (slot.type === 'personal' && slot.student) {
+            const rawStudentStr = slot.student;
+            const hasSlash = rawStudentStr.includes('/');
+            const studentList = hasSlash ? rawStudentStr.split('/').map(n => n.trim()).filter(n => n !== '') : [rawStudentStr.trim()];
+            const is1on2 = hasSlash;
+            const coachObj = getCoachObj(slot.coach);
+            const unitRate = is1on2 ? coachObj.rate2 : coachObj.rate1;
+
+            studentList.forEach(singleStudent => {
+              const isMatch = (type === 'coach' && slot.coach === target) || (type === 'student' && singleStudent === target);
+              if (isMatch) {
+                const [cIdx, tIdx] = sKey.split('_').map(Number);
+                const dObj = new Date(dStr);
+                const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+                const monthDayStr = `${dObj.getMonth()+1}/${dObj.getDate()}(${weekDays[dObj.getDay()]})`;
+                const timeStr = ALL_TIME_SLOTS[tIdx].replace(/\s~\s/g, '-');
+                const timeNotePart = slot.timeNote ? ` ${slot.timeNote}` : '';
+                const formattedTime = `${monthDayStr} ${timeStr}${timeNotePart}`;
+
+                allSlots.push({
+                  date: dStr,
+                  student: singleStudent,
+                  coach: slot.coach || '無',
+                  formattedTime: formattedTime,
+                  is1on2: is1on2,
+                  unitRate: unitRate
+                });
+              }
+            });
+          }
+        });
+      });
+
+      if (allSlots.length === 0) {
+        alert('目前無符合條件的個練統計紀錄可供匯出！');
+        return;
+      }
+
+      allSlots.sort((a, b) => a.date.localeCompare(b.date));
+
+      const studentMap = {};
+      allSlots.forEach(item => {
+        const sName = item.student;
+        if (!studentMap[sName]) {
+          studentMap[sName] = {
+            student: sName,
+            coach: item.coach,
+            times: [],
+            hr1on1: 0,
+            hr1on2: 0,
+            totalFee: 0
+          };
+        }
+        studentMap[sName].times.push(item.formattedTime);
+        if (item.is1on2) {
+          studentMap[sName].hr1on2 += 1;
+        } else {
+          studentMap[sName].hr1on1 += 1;
+        }
+        studentMap[sName].totalFee += item.unitRate;
+      });
+
+      let dateTitleStr = range === 'custom' ? `${statsStartDateInput.value} ~ ${statsEndDateInput.value}` : range === 'current' ? currentDate : '個人練習統計表';
+
+      const excelRows = [
+        [null, '請教練或家長溝通好，自行登記個練訓練時間，並由雙方確認訓練時間、費用無誤後，於每月1日晚上21：00前停止登記前一個月的時數。'],
+        [null, '麻煩大家務必配合，再次感謝協助每個月協助場地紀錄表的前會長 信維爸爸、每月協助登記及帳務處理的姜宸媽媽、峻誠媽媽，辛苦了。'],
+        [null, null],
+        [null, null],
+        [null, dateTitleStr],
+        [null, '姓名', '訓練時間', null, null, null, null, null, '一對一（hr）', '一對二（hr）', '費用', '教練']
+      ];
+
+      Object.values(studentMap).forEach(sData => {
+        let rowData = [null, sData.student];
+        for (let i = 0; i < 6; i++) {
+          rowData.push(sData.times[i] || null);
+        }
+        rowData.push(sData.hr1on1 > 0 ? sData.hr1on1 : null);
+        rowData.push(sData.hr1on2 > 0 ? sData.hr1on2 : null);
+        rowData.push(sData.totalFee);
+        rowData.push(sData.coach);
+        excelRows.push(rowData);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(excelRows);
+      ws['!cols'] = [
+        { wch: 3 }, { wch: 10 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 22 },
+        { wch: 22 }, { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "個練統計表");
+      XLSX.writeFile(wb, `個練統計表_${target}_${currentDate}.xlsx`);
+    });
+
+    // 📥 匯出全體學員總表 (.xlsx) - 自動納入該區間所有個練學員
+    exportAllStudentsExcelBtn.addEventListener('click', async () => {
+      const range = statsRangeSelect.value;
+      let targetDates = [];
+      if (range === 'current') {
+        targetDates = [currentDate];
+      } else if (range === 'custom') {
+        const start = statsStartDateInput.value;
+        const end = statsEndDateInput.value;
+        if (start && end && start <= end) {
+          targetDates = getDateRangeArray(start, end);
+        }
+      } else {
+        targetDates = Object.keys(bookings);
+      }
+
+      if (range === 'custom' && targetDates.length > 0) {
+        statsLoadingOverlay.classList.remove('hidden');
+        await fetchMissingDatesData(targetDates);
+        statsLoadingOverlay.classList.add('hidden');
+      }
+
+      let allSlots = [];
+      targetDates.forEach(dStr => {
+        const dayData = bookings[dStr];
+        if (!dayData || !dayData.slots) return;
+        Object.keys(dayData.slots).forEach(sKey => {
+          const slot = dayData.slots[sKey];
+          if (slot.type === 'personal' && slot.student) {
+            const rawStudentStr = slot.student;
+            const hasSlash = rawStudentStr.includes('/');
+            const studentList = hasSlash ? rawStudentStr.split('/').map(n => n.trim()).filter(n => n !== '') : [rawStudentStr.trim()];
+            const is1on2 = hasSlash;
+            const coachObj = getCoachObj(slot.coach);
+            const unitRate = is1on2 ? coachObj.rate2 : coachObj.rate1;
+
+            studentList.forEach(singleStudent => {
+              const [cIdx, tIdx] = sKey.split('_').map(Number);
+              const dObj = new Date(dStr);
+              const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+              const monthDayStr = `${dObj.getMonth()+1}/${dObj.getDate()}(${weekDays[dObj.getDay()]})`;
+              const timeStr = ALL_TIME_SLOTS[tIdx].replace(/\s~\s/g, '-');
+              const timeNotePart = slot.timeNote ? ` ${slot.timeNote}` : '';
+              const formattedTime = `${monthDayStr} ${timeStr}${timeNotePart}`;
+
+              allSlots.push({
+                date: dStr,
+                student: singleStudent,
+                coach: slot.coach || '無',
+                formattedTime: formattedTime,
+                is1on2: is1on2,
+                unitRate: unitRate
+              });
+            });
+          }
+        });
+      });
+
+      if (allSlots.length === 0) {
+        alert('選取的時間區間內查無任何個練學員紀錄！');
+        return;
+      }
+
+      allSlots.sort((a, b) => a.date.localeCompare(b.date));
+
+      const studentMap = {};
+      allSlots.forEach(item => {
+        const sName = item.student;
+        if (!studentMap[sName]) {
+          studentMap[sName] = {
+            student: sName,
+            coach: item.coach,
+            times: [],
+            hr1on1: 0,
+            hr1on2: 0,
+            totalFee: 0
+          };
+        }
+        studentMap[sName].times.push(item.formattedTime);
+        if (item.is1on2) {
+          studentMap[sName].hr1on2 += 1;
+        } else {
+          studentMap[sName].hr1on1 += 1;
+        }
+        studentMap[sName].totalFee += item.unitRate;
+      });
+
+      let dateRangeLabel = range === 'custom' ? `${statsStartDateInput.value} ~ ${statsEndDateInput.value}` : range === 'current' ? `當日 (${currentDate})` : '全體學員個練總表';
+
+      const excelRows = [
+        [null, '請教練或家長溝通好，自行登記個練訓練時間，並由雙方確認訓練時間、費用無誤後，於每月1日晚上21：00前停止登記前一個月的時數。'],
+        [null, '麻煩大家務必配合，再次感謝協助每個月協助場地紀錄表的前會長 信維爸爸、每月協助登記及帳務處理的姜宸媽媽、峻誠媽媽，辛苦了。'],
+        [null, null],
+        [null, null],
+        [null, `羽球隊個人練習總表 (${dateRangeLabel})`],
+        [null, '姓名', '訓練時間', null, null, null, null, null, '一對一（hr）', '一對二（hr）', '費用', '教練']
+      ];
+
+      Object.values(studentMap).forEach(sData => {
+        let rowData = [null, sData.student];
+        for (let i = 0; i < 6; i++) {
+          rowData.push(sData.times[i] || null);
+        }
+        rowData.push(sData.hr1on1 > 0 ? sData.hr1on1 : null);
+        rowData.push(sData.hr1on2 > 0 ? sData.hr1on2 : null);
+        rowData.push(sData.totalFee);
+        rowData.push(sData.coach);
+        excelRows.push(rowData);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(excelRows);
+      ws['!cols'] = [
+        { wch: 3 }, { wch: 10 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 22 },
+        { wch: 22 }, { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "全體學員總表");
+      XLSX.writeFile(wb, `全體學員個練總表_${currentDate}.xlsx`);
+    });
 
     function getActiveTimeSlots() {
       const isNightOnly = bookings[currentDate] && bookings[currentDate].nightOnly;
@@ -710,30 +1143,30 @@
 
     function renderCoachSelect(selectedCoach = '') {
       selectCoach.innerHTML = '<option value="">-- 無指定教練 --</option>';
-      coachList.forEach(coach => {
+      coachList.forEach(c => {
         const opt = document.createElement('option');
-        opt.value = coach;
-        opt.innerText = coach;
-        if (coach === selectedCoach) opt.selected = true;
+        opt.value = c.name;
+        opt.innerText = `${c.name} (1v1:$${c.rate1}/1v2:$${c.rate2})`;
+        if (c.name === selectedCoach) opt.selected = true;
         selectCoach.appendChild(opt);
       });
 
       if (isAdminLoggedIn) {
         const addOpt = document.createElement('option');
         addOpt.value = '__ADD_NEW_COACH__';
-        addOpt.innerText = '➕ 新增自訂教練...';
+        addOpt.innerText = '➕ 快速新增教練...';
         selectCoach.appendChild(addOpt);
       }
     }
 
     selectCoach.addEventListener('change', (e) => {
       if (e.target.value === '__ADD_NEW_COACH__') {
-        const newCoach = prompt('請輸入新教練的名稱：');
-        if (newCoach && newCoach.trim() !== '') {
-          const trimmed = newCoach.trim();
-          if (!coachList.includes(trimmed)) {
-            coachList.push(trimmed);
-            localStorage.setItem('badminton_coach_list', JSON.stringify(coachList));
+        const newCoachName = prompt('請輸入新教練的名稱：');
+        if (newCoachName && newCoachName.trim() !== '') {
+          const trimmed = newCoachName.trim();
+          if (!coachList.some(c => c.name === trimmed)) {
+            coachList.push({ name: trimmed, rate1: 600, rate2: 400 });
+            localStorage.setItem('badminton_coach_list_v2', JSON.stringify(coachList));
           }
           renderCoachSelect(trimmed);
         } else {
@@ -742,7 +1175,6 @@
       }
     });
 
-    // 管理員登入控制
     adminLoginBtn.addEventListener('click', () => {
       if (isAdminLoggedIn) {
         if (confirm('確定要登出管理員身分嗎？登出後將切換為唯讀檢視模式。')) {
@@ -771,7 +1203,6 @@
 
     closeLoginBtn.addEventListener('click', () => loginModal.classList.add('hidden'));
 
-    // 教練管理視窗
     manageCoachesBtn.addEventListener('click', () => {
       renderCoachManageList();
       coachManageModal.classList.remove('hidden');
@@ -786,10 +1217,18 @@
       }
       coachList.forEach((coach, index) => {
         const row = document.createElement('div');
-        row.className = 'flex items-center justify-between gap-2 bg-slate-50 p-2 rounded-md border border-slate-200';
+        row.className = 'flex items-center gap-2 bg-slate-50 p-2 rounded-md border border-slate-200';
         row.innerHTML = `
-          <input type="text" value="${coach}" class="flex-1 text-xs p-1.5 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500" data-index="${index}" id="coach-edit-${index}">
-          <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded text-xs transition save-coach-edit" data-index="${index}">修改</button>
+          <input type="text" value="${coach.name}" class="w-28 text-xs p-1.5 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold" id="coach-name-${index}">
+          <div class="flex items-center gap-1 text-[11px] text-slate-600">
+            <span>1對1:</span>
+            <input type="number" value="${coach.rate1}" class="w-16 text-xs p-1.5 bg-white border border-slate-300 rounded font-mono text-right" id="coach-r1-${index}">
+          </div>
+          <div class="flex items-center gap-1 text-[11px] text-slate-600">
+            <span>1對2:</span>
+            <input type="number" value="${coach.rate2}" class="w-16 text-xs p-1.5 bg-white border border-slate-300 rounded font-mono text-right" id="coach-r2-${index}">
+          </div>
+          <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded text-xs transition save-coach-edit ml-auto" data-index="${index}">儲存</button>
           <button class="bg-rose-600 hover:bg-rose-500 text-white px-2.5 py-1.5 rounded text-xs transition delete-coach-btn" data-index="${index}">刪除</button>
         `;
         coachManageList.appendChild(row);
@@ -798,12 +1237,15 @@
       coachManageList.querySelectorAll('.save-coach-edit').forEach(btn => {
         btn.addEventListener('click', (e) => {
           const idx = e.target.dataset.index;
-          const val = document.getElementById(`coach-edit-${idx}`).value.trim();
-          if (val) {
-            coachList[idx] = val;
-            localStorage.setItem('badminton_coach_list', JSON.stringify(coachList));
-            alert('教練名稱已更新！');
+          const nameVal = document.getElementById(`coach-name-${idx}`).value.trim();
+          const r1Val = parseFloat(document.getElementById(`coach-r1-${idx}`).value) || 0;
+          const r2Val = parseFloat(document.getElementById(`coach-r2-${idx}`).value) || 0;
+          if (nameVal) {
+            coachList[idx] = { name: nameVal, rate1: r1Val, rate2: r2Val };
+            localStorage.setItem('badminton_coach_list_v2', JSON.stringify(coachList));
+            alert('教練名稱與費率已更新！');
             renderGrid();
+            renderCoachManageList();
           }
         });
       });
@@ -811,9 +1253,9 @@
       coachManageList.querySelectorAll('.delete-coach-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           const idx = e.target.dataset.index;
-          if (confirm(`確定要刪除教練「${coachList[idx]}」嗎？`)) {
+          if (confirm(`確定要刪除教練「${coachList[idx].name}」嗎？`)) {
             coachList.splice(idx, 1);
-            localStorage.setItem('badminton_coach_list', JSON.stringify(coachList));
+            localStorage.setItem('badminton_coach_list_v2', JSON.stringify(coachList));
             renderCoachManageList();
             renderGrid();
           }
@@ -822,13 +1264,17 @@
     }
 
     addCoachSubmitBtn.addEventListener('click', () => {
-      const val = newCoachInput.value.trim();
-      if (val && !coachList.includes(val)) {
-        coachList.push(val);
-        localStorage.setItem('badminton_coach_list', JSON.stringify(coachList));
+      const nameVal = newCoachInput.value.trim();
+      const r1Val = parseFloat(newCoach1on1.value) || 600;
+      const r2Val = parseFloat(newCoach1on2.value) || 400;
+
+      if (nameVal && !coachList.some(c => c.name === nameVal)) {
+        coachList.push({ name: nameVal, rate1: r1Val, rate2: r2Val });
+        localStorage.setItem('badminton_coach_list_v2', JSON.stringify(coachList));
         newCoachInput.value = '';
         renderCoachManageList();
         renderGrid();
+        alert('新教練新增成功！');
       } else {
         alert('請輸入有效或未重複的教練名稱！');
       }

@@ -24,7 +24,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 掛載至全域變數供主程式調用
     window.db = db;
     window.fsDoc = doc;
     window.fsGetDoc = getDoc;
@@ -38,15 +37,27 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
     
-    /* Custom Scrollbar */
     .grid-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
     .grid-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
     .grid-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     .grid-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-    /* Sticky Columns and Headers */
     .sticky-col { position: sticky; left: 0; z-index: 20; }
     .sticky-header { position: sticky; top: 0; z-index: 10; }
+
+    /* 跑馬燈動畫動畫 Keyframes */
+    @keyframes marquee {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    .animate-marquee {
+      display: inline-block;
+      white-space: nowrap;
+      animation: marquee 12s linear infinite;
+    }
+    .animate-marquee:hover {
+      animation-play-state: paused;
+    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 h-screen flex flex-col overflow-hidden">
@@ -62,16 +73,16 @@
           <span>羽球場預約統計系統</span>
           <span id="mode-badge" class="text-[10px] bg-emerald-700/80 text-emerald-200 px-1.5 py-0.5 rounded font-normal border border-emerald-600">Excel 模式</span>
         </h1>
-        <p class="text-[10px] sm:text-[11px] text-emerald-200">格式對齊：Y 軸場地 / X 軸時間段 (07:00 ~ 21:00)</p>
+        <p class="text-[10px] sm:text-[11px] text-emerald-200">格式對齊：Y 軸場地 / X 軸時間段</p>
       </div>
     </div>
 
     <!-- Right Controls -->
     <div class="flex items-center space-x-1.5 sm:space-x-2 text-xs">
-      <!-- Admin Login Toggle Button -->
-      <button id="admin-login-trigger-btn" class="bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1.5 border border-slate-700 shrink-0">
-        <i id="admin-btn-icon" class="fa-solid fa-lock"></i>
-        <span id="admin-btn-text">管理者登入</span>
+      <!-- 管理員登入按鈕 -->
+      <button id="admin-login-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1 shrink-0">
+        <i class="fa-solid fa-lock" id="admin-lock-icon"></i>
+        <span id="admin-btn-text">管理員登入</span>
       </button>
 
       <!-- Mode Toggle Button -->
@@ -94,90 +105,78 @@
         回到今日
       </button>
 
+      <!-- 清空當日按鈕（僅管理者可使用） -->
       <button id="clear-day-btn" class="hidden bg-rose-700/80 hover:bg-rose-600 text-white px-2 py-1 rounded-lg text-xs font-medium transition shadow-sm border border-rose-600/50" title="清空當日">
         <i class="fa-solid fa-trash-can"></i><span class="hidden sm:inline ml-1">清空當日</span>
       </button>
     </div>
   </header>
 
-  <!-- Quick Date Tabs Bar (Excel Sheet Style) -->
+  <!-- Quick Date Tabs Bar -->
   <nav class="bg-slate-200 border-b border-slate-300 px-2 py-1 flex items-center gap-1 overflow-x-auto text-xs shrink-0" id="date-tabs-bar">
     <!-- JS Rendered Tabs -->
   </nav>
 
-  <!-- Super Eye-Catching Event Header Notice Banner -->
-  <div class="bg-indigo-950 text-white px-3 sm:px-4 py-1.5 border-b border-indigo-900 flex items-center justify-between gap-2.5 shrink-0 shadow-inner">
-    <div class="flex items-center gap-2 flex-1">
-      <div class="bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded text-[10px] sm:text-[11px] tracking-wider flex items-center gap-1 shrink-0 uppercase shadow">
+  <!-- Event Header Notice Banner -->
+  <div class="bg-indigo-950 text-white px-3 sm:px-4 py-1.5 border-b border-indigo-900 flex flex-wrap items-center justify-between gap-2.5 shrink-0 shadow-inner">
+    <div class="flex items-center gap-2 flex-1 min-w-[300px]">
+      <div class="bg-amber-400 text-slate-950 font-black px-2.5 py-1 rounded text-xs sm:text-sm tracking-wider flex items-center gap-1.5 shrink-0 uppercase shadow">
         <i class="fa-solid fa-trophy"></i>
-        <span>今日賽事/活動</span>
+        <span>今日賽事/活動備註</span>
       </div>
-      <div class="relative flex-1 max-w-md">
-        <input type="text" id="day-event-title" placeholder="點擊設定活動標記 (如：摩亞盃...)" class="w-full bg-indigo-900/80 hover:bg-indigo-900 text-amber-300 font-extrabold text-xs sm:text-sm px-2.5 py-1 rounded border border-amber-400/50 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400/30 transition placeholder-indigo-300/60 tracking-wide">
+      
+      <!-- 放大與跑馬燈效果容器 -->
+      <div class="relative flex-1 overflow-hidden bg-indigo-900/90 rounded border border-amber-400/60 h-9 flex items-center px-2 cursor-pointer" id="marquee-container" title="點擊進行編輯">
+        <!-- 輸入框 (未觸發跑馬燈或編輯中顯示) -->
+        <input type="text" id="day-event-title" readonly placeholder="點擊設定活動標記 (如：摩亞盃...)" class="w-full bg-transparent text-amber-300 font-black text-base sm:text-lg px-1 focus:outline-none placeholder-indigo-300/50 tracking-wide cursor-not-allowed">
+        
+        <!-- 跑馬燈顯示區 (輸入完成後顯示) -->
+        <div id="day-event-marquee" class="hidden w-full overflow-hidden text-amber-300 font-black text-base sm:text-xl tracking-wider select-none">
+          <div id="marquee-text" class="animate-marquee"></div>
+        </div>
       </div>
     </div>
 
-    <div class="hidden sm:flex items-center gap-3 text-[11px] font-medium text-indigo-200 shrink-0 border-l border-indigo-800/80 pl-3">
-      <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-emerald-100 border border-emerald-400 inline-block shadow-sm"></span> 個練預約</span>
-      <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-amber-100 border border-amber-400 inline-block shadow-sm"></span> 社團包場</span>
-      <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-white border border-slate-300 inline-block shadow-sm"></span> 空白可選</span>
+    <div class="flex items-center gap-3 shrink-0">
+      <!-- 僅限管理者登入後顯示的當日晚間時段切換控制 -->
+      <label id="night-toggle-wrapper" class="hidden items-center gap-1.5 bg-indigo-900/80 hover:bg-indigo-900 px-3 py-1.5 rounded-lg border border-indigo-700 text-xs text-indigo-200 cursor-pointer select-none transition">
+        <input type="checkbox" id="night-only-checkbox" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 accent-emerald-600 cursor-pointer">
+        <span class="font-bold text-amber-300">🌙 當日僅顯示晚上 (18:00-21:00)</span>
+      </label>
+
+      <!-- 管理教練名單按鈕（限管理者登入後顯示） -->
+      <button id="manage-coaches-btn" class="hidden bg-indigo-700 hover:bg-indigo-600 text-white font-medium px-2.5 py-1.5 rounded-lg text-xs transition shadow border border-indigo-500 flex items-center gap-1">
+        <i class="fa-solid fa-user-gear"></i> 教練管理
+      </button>
+
+      <div class="hidden md:flex items-center gap-3 text-[11px] font-medium text-indigo-200 border-l border-indigo-800/80 pl-3">
+        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-emerald-100 border border-emerald-400 inline-block shadow-sm"></span> 個練預約</span>
+        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-amber-100 border border-amber-400 inline-block shadow-sm"></span> 社團包場</span>
+        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-white border border-slate-300 inline-block shadow-sm"></span> 空白可選</span>
+      </div>
     </div>
   </div>
 
   <!-- Main Excel / Mobile Grid Area -->
   <main class="flex-1 overflow-auto grid-scroll p-2 sm:p-4 pb-24 bg-slate-100 flex flex-col">
     <div id="main-container" class="bg-white rounded-lg shadow-md border border-slate-300 overflow-hidden flex-1 flex flex-col min-w-[1000px]">
-      
-      <!-- Table Header & Body -->
       <div id="grid-table" class="divide-y divide-slate-200 flex-1 flex flex-col">
         <!-- JS Dynamic Table Construction -->
       </div>
-
     </div>
   </main>
 
-  <!-- Selection Action Bar (Floating Footer) -->
+  <!-- Selection Action Bar -->
   <div id="action-bar" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-4 sm:px-5 py-2.5 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 translate-y-24 opacity-0 z-30 border border-slate-700 w-[90%] max-w-md justify-between sm:justify-start">
     <div class="text-xs shrink-0">
       已選取 <span id="selected-count" class="font-bold text-amber-400 text-sm">0</span> 格
     </div>
-
     <div class="h-4 w-[1px] bg-slate-700 hidden sm:block"></div>
-
     <button id="open-booking-modal-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 shadow">
       <i class="fa-solid fa-pen-to-square"></i>
       <span>填寫預約資料</span>
     </button>
-
-    <button id="cancel-selection-btn" class="text-xs text-slate-400 hover:text-white px-2 py-1">
-      取消
-    </button>
-  </div>
-
-  <!-- Admin Login Modal -->
-  <div id="admin-login-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden">
-      <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-        <h3 class="font-bold text-sm flex items-center gap-2">
-          <i class="fa-solid fa-lock text-amber-300"></i>
-          <span>管理者密碼驗證</span>
-        </h3>
-        <button id="close-admin-modal-btn" class="text-slate-400 hover:text-white">
-          <i class="fa-solid fa-xmark text-lg"></i>
-        </button>
-      </div>
-      <div class="p-5 space-y-3">
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">請輸入管理者密碼</label>
-          <input type="password" id="admin-password-input" placeholder="請輸入 8 位數密碼" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500">
-        </div>
-        <p id="admin-login-error" class="text-xs text-rose-600 hidden font-medium">密碼錯誤，請重新輸入！</p>
-      </div>
-      <div class="p-3 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
-        <button id="cancel-admin-login" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100">取消</button>
-        <button id="submit-admin-login" class="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium shadow transition">確認登入</button>
-      </div>
-    </div>
+    <button id="cancel-selection-btn" class="text-xs text-slate-400 hover:text-white px-2 py-1">取消</button>
   </div>
 
   <!-- Booking Modal -->
@@ -186,7 +185,7 @@
       <div class="p-4 bg-emerald-800 text-white flex items-center justify-between">
         <h3 class="font-bold text-sm flex items-center gap-2">
           <i class="fa-solid fa-calendar-check"></i>
-          <span id="modal-title">新增/編輯預約</span>
+          <span id="modal-title">預約詳情</span>
         </h3>
         <button id="close-modal-btn" class="text-emerald-200 hover:text-white">
           <i class="fa-solid fa-xmark text-lg"></i>
@@ -194,19 +193,13 @@
       </div>
 
       <div class="p-5 space-y-4">
-        <div id="modal-slots-summary" class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-600 font-mono max-h-24 overflow-y-auto">
-          <!-- Slots List -->
-        </div>
+        <div id="modal-slots-summary" class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-600 font-mono max-h-24 overflow-y-auto"></div>
 
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">預約類型</label>
           <div class="grid grid-cols-2 gap-2">
-            <button type="button" id="type-personal-btn" class="py-1.5 px-3 border border-emerald-600 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-medium text-center transition">
-              學員個人練習
-            </button>
-            <button type="button" id="type-club-btn" class="py-1.5 px-3 border border-slate-300 bg-white text-slate-600 rounded-lg text-xs font-medium text-center transition hover:bg-slate-50">
-              社團包場
-            </button>
+            <button type="button" id="type-personal-btn" class="py-1.5 px-3 border border-emerald-600 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-medium text-center transition">學員個人練習</button>
+            <button type="button" id="type-club-btn" class="py-1.5 px-3 border border-slate-300 bg-white text-slate-600 rounded-lg text-xs font-medium text-center transition hover:bg-slate-50">社團包場</button>
           </div>
         </div>
 
@@ -217,8 +210,13 @@
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">指導教練</label>
-            <input type="text" id="input-coach" placeholder="例如：彭教練、盧教練、陳教練" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500">
+            <label class="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+              <span>指導教練</span>
+              <span class="text-[10px] text-slate-400 font-normal">可從清單選取或新增</span>
+            </label>
+            <select id="select-coach" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500">
+              <option value="">-- 無指定教練 --</option>
+            </select>
           </div>
 
           <div>
@@ -228,9 +226,7 @@
         </div>
 
         <div id="club-fields" class="hidden">
-          <p class="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-md border border-amber-200">
-            選取時段將標記為「社團」，適用於團體活動或社團包場。
-          </p>
+          <p class="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-md border border-amber-200">選取時段將標記為「社團」，適用於團體活動或社團包場。</p>
         </div>
       </div>
 
@@ -239,56 +235,79 @@
           <i class="fa-solid fa-trash-can"></i> 取消此預約
         </button>
         <div class="flex gap-2 ml-auto">
-          <button id="cancel-modal-action" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100">取消</button>
+          <button id="cancel-modal-action" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100">關閉</button>
           <button id="save-booking-btn" class="px-4 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-medium shadow transition">確認儲存</button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- 管理員登入 Modal -->
+  <div id="login-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-xs overflow-hidden p-5 space-y-4">
+      <div class="flex items-center justify-between border-b pb-2">
+        <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-lock text-indigo-600"></i> 管理員登入</h3>
+        <button id="close-login-btn" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-base"></i></button>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">請輸入管理密碼</label>
+        <input type="password" id="admin-password-input" placeholder="請輸入密碼" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button id="submit-login-btn" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium transition shadow">登入系統</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 教練管理 Modal -->
+  <div id="coach-manage-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden p-5 space-y-4">
+      <div class="flex items-center justify-between border-b pb-2">
+        <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-user-gear text-indigo-600"></i> 教練名單管理</h3>
+        <button id="close-coach-modal-btn" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-base"></i></button>
+      </div>
+      <div class="space-y-2 max-h-60 overflow-y-auto pr-1" id="coach-manage-list">
+        <!-- JS 產出教練清單供修改/刪除 -->
+      </div>
+      <div class="flex gap-2 pt-2 border-t">
+        <input type="text" id="new-coach-input" placeholder="新增教練名稱..." class="flex-1 text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+        <button id="add-coach-submit-btn" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-xs font-medium transition">新增</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // --- Application Constants & State ---
     const COURTS = ['場地1', '場地2', '場地3'];
-    const TIME_SLOTS = [
-      '07:00 ~ 08:00',
-      '08:00 ~ 09:00',
-      '09:00 ~ 10:00',
-      '10:00 ~ 11:00',
-      '11:00 ~ 12:00',
-      '12:00 ~ 13:00',
-      '13:00 ~ 14:00',
-      '14:00 ~ 15:00',
-      '15:00 ~ 16:00',
-      '16:00 ~ 17:00',
-      '17:00 ~ 18:00',
-      '18:00 ~ 19:00',
-      '19:00 ~ 20:00',
-      '20:00 ~ 21:00'
+    const ALL_TIME_SLOTS = [
+      '07:00 ~ 08:00', '08:00 ~ 09:00', '09:00 ~ 10:00', '10:00 ~ 11:00',
+      '11:00 ~ 12:00', '12:00 ~ 13:00', '13:00 ~ 14:00', '14:00 ~ 15:00',
+      '15:00 ~ 16:00', '16:00 ~ 17:00', '17:00 ~ 18:00', '18:00 ~ 19:00',
+      '19:00 ~ 20:00', '20:00 ~ 21:00'
     ];
 
     let currentDate = new Date().toISOString().split('T')[0];
-    let selectedCells = new Set(); // Stores "courtIndex_timeIndex"
-    let bookings = {}; // Format: { "YYYY-MM-DD": { eventTitle: "", slots: { "court_time": { student, coach, timeNote, type } } } }
-    let currentEditKey = null; // Key when editing single existing booking
+    let selectedCells = new Set(); 
+    let bookings = {}; 
+    let currentEditKey = null; 
     let currentBookingType = 'personal';
     let isMobileView = localStorage.getItem('badminton_view_mode') === 'mobile';
-    let isAdmin = sessionStorage.getItem('badminton_is_admin') === 'true';
-    let unsubscribe = null; // Firestore snapshot unsubscribe function
+    let isAdminLoggedIn = false;
+    let unsubscribe = null; 
 
-    // --- Firestore & LocalStorage Sync ---
+    let coachList = JSON.parse(localStorage.getItem('badminton_coach_list')) || [
+      '彭教練', '盧教練', '陳教練', '林教練', '黃教練'
+    ];
+
     function setupFirestoreListener() {
       if (!window.db) {
         loadLocalStorageFallback();
         renderAll();
         return;
       }
-
-      if (unsubscribe) {
-        unsubscribe(); // 取消上一個日期的監聽
-      }
+      if (unsubscribe) unsubscribe(); 
 
       if (!bookings[currentDate]) {
-        bookings[currentDate] = { eventTitle: '', slots: {} };
+        bookings[currentDate] = { eventTitle: '', nightOnly: false, slots: {} };
       }
 
       const docRef = window.fsDoc(window.db, "bookings", currentDate);
@@ -296,10 +315,10 @@
         if (docSnap.exists()) {
           bookings[currentDate] = docSnap.data();
         } else {
-          // 初始化預設範例資料 (僅限今日且完全空白時)
           if (currentDate === new Date().toISOString().split('T')[0] && Object.keys(bookings[currentDate].slots || {}).length === 0) {
             bookings[currentDate] = {
               eventTitle: '摩亞盃',
+              nightOnly: false,
               slots: {
                 '0_11': { student: '弈寬', coach: '彭教練', timeNote: '18:20-19:20', type: 'personal' },
                 '0_12': { student: '峻誠', coach: '彭教練', timeNote: '', type: 'personal' },
@@ -309,27 +328,25 @@
             };
             saveData();
           } else {
-            bookings[currentDate] = { eventTitle: '', slots: {} };
+            bookings[currentDate] = { eventTitle: '', nightOnly: false, slots: {} };
           }
         }
+        
+        nightOnlyCheckbox.checked = !!bookings[currentDate].nightOnly;
         renderGrid();
-        dayEventTitleInput.value = bookings[currentDate].eventTitle || '';
+        updateEventBannerDisplay();
       }, (error) => {
-        console.error("Firestore 監聽失敗，改用 LocalStorage:", error);
+        console.error("Firestore 監聽失敗:", error);
         loadLocalStorageFallback();
         renderAll();
       });
     }
 
     function saveData() {
-      if (!isAdmin) return; // 訪客無法寫入
-      // 1. 寫入 Firestore 雲端資料庫
       if (window.db) {
         const docRef = window.fsDoc(window.db, "bookings", currentDate);
-        window.fsSetDoc(docRef, bookings[currentDate] || { eventTitle: '', slots: {} })
-          .catch(err => console.error("Firestore 儲存失敗:", err));
+        window.fsSetDoc(docRef, bookings[currentDate] || { eventTitle: '', nightOnly: false, slots: {} }).catch(err => console.error(err));
       }
-      // 2. 同步備份至 LocalStorage
       localStorage.setItem('badminton_excel_bookings', JSON.stringify(bookings));
     }
 
@@ -339,11 +356,12 @@
         try { bookings = JSON.parse(saved); } catch(e) { bookings = {}; }
       }
       if (!bookings[currentDate]) {
-        bookings[currentDate] = { eventTitle: '', slots: {} };
+        bookings[currentDate] = { eventTitle: '', nightOnly: false, slots: {} };
       }
+      nightOnlyCheckbox.checked = !!bookings[currentDate].nightOnly;
     }
 
-    // --- DOM Elements ---
+    // DOM Elements
     const datePicker = document.getElementById('date-picker');
     const prevDayBtn = document.getElementById('prev-day-btn');
     const nextDayBtn = document.getElementById('next-day-btn');
@@ -351,6 +369,13 @@
     const clearDayBtn = document.getElementById('clear-day-btn');
     const dateTabsBar = document.getElementById('date-tabs-bar');
     const dayEventTitleInput = document.getElementById('day-event-title');
+    const marqueeContainer = document.getElementById('marquee-container');
+    const dayEventMarquee = document.getElementById('day-event-marquee');
+    const marqueeText = document.getElementById('marquee-text');
+
+    const nightOnlyCheckbox = document.getElementById('night-only-checkbox');
+    const nightToggleWrapper = document.getElementById('night-toggle-wrapper');
+    const manageCoachesBtn = document.getElementById('manage-coaches-btn');
     const gridTable = document.getElementById('grid-table');
     const mainContainer = document.getElementById('main-container');
     
@@ -359,15 +384,19 @@
     const modeText = document.getElementById('mode-text');
     const modeBadge = document.getElementById('mode-badge');
 
-    const adminLoginTriggerBtn = document.getElementById('admin-login-trigger-btn');
-    const adminBtnIcon = document.getElementById('admin-btn-icon');
+    const adminLoginBtn = document.getElementById('admin-login-btn');
+    const adminLockIcon = document.getElementById('admin-lock-icon');
     const adminBtnText = document.getElementById('admin-btn-text');
-    const adminLoginModal = document.getElementById('admin-login-modal');
-    const closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
-    const cancelAdminLogin = document.getElementById('cancel-admin-login');
-    const submitAdminLogin = document.getElementById('submit-admin-login');
+    const loginModal = document.getElementById('login-modal');
+    const closeLoginBtn = document.getElementById('close-login-btn');
     const adminPasswordInput = document.getElementById('admin-password-input');
-    const adminLoginError = document.getElementById('admin-login-error');
+    const submitLoginBtn = document.getElementById('submit-login-btn');
+
+    const coachManageModal = document.getElementById('coach-manage-modal');
+    const closeCoachModalBtn = document.getElementById('close-coach-modal-btn');
+    const coachManageList = document.getElementById('coach-manage-list');
+    const newCoachInput = document.getElementById('new-coach-input');
+    const addCoachSubmitBtn = document.getElementById('add-coach-submit-btn');
 
     const actionBar = document.getElementById('action-bar');
     const selectedCountEl = document.getElementById('selected-count');
@@ -384,77 +413,234 @@
     const personalFields = document.getElementById('personal-fields');
     const clubFields = document.getElementById('club-fields');
     const inputStudent = document.getElementById('input-student');
-    const inputCoach = document.getElementById('input-coach');
+    const selectCoach = document.getElementById('select-coach');
     const inputTimeNote = document.getElementById('input-time-note');
     const modalSlotsSummary = document.getElementById('modal-slots-summary');
 
-    // --- Admin Permission UI Sync ---
-    function updateAdminUI() {
-      if (isAdmin) {
-        adminBtnText.innerText = '登出管理';
-        adminBtnIcon.className = 'fa-solid fa-unlock-keyhole text-amber-300';
-        adminLoginTriggerBtn.className = 'bg-amber-600 hover:bg-amber-500 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1.5 border border-amber-500 shrink-0';
+    function updateAdminUIState() {
+      if (isAdminLoggedIn) {
         clearDayBtn.classList.remove('hidden');
-        dayEventTitleInput.disabled = false;
+        nightToggleWrapper.classList.remove('hidden');
+        nightToggleWrapper.classList.add('flex');
+        manageCoachesBtn.classList.remove('hidden');
+        adminLockIcon.className = 'fa-solid fa-lock-open';
+        adminBtnText.innerText = '管理員登出';
+        adminLoginBtn.className = 'bg-rose-600 hover:bg-rose-500 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1 shrink-0';
       } else {
-        adminBtnText.innerText = '管理者登入';
-        adminBtnIcon.className = 'fa-solid fa-lock';
-        adminLoginTriggerBtn.className = 'bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1.5 border border-slate-700 shrink-0';
         clearDayBtn.classList.add('hidden');
-        dayEventTitleInput.disabled = true;
+        nightToggleWrapper.classList.add('hidden');
+        manageCoachesBtn.classList.add('hidden');
+        adminLockIcon.className = 'fa-solid fa-lock';
+        adminBtnText.innerText = '管理員登入';
+        adminLoginBtn.className = 'bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1 shrink-0';
         selectedCells.clear();
         updateActionBar();
       }
+      updateEventBannerDisplay();
     }
 
-    // --- Admin Login Actions ---
-    adminLoginTriggerBtn.addEventListener('click', () => {
-      if (isAdmin) {
-        if (confirm('確定要登出管理者身分嗎？')) {
-          isAdmin = false;
-          sessionStorage.removeItem('badminton_is_admin');
-          updateAdminUI();
+    // 跑馬燈與輸入框視角控制
+    function updateEventBannerDisplay() {
+      const val = (bookings[currentDate] && bookings[currentDate].eventTitle) || '';
+      dayEventTitleInput.value = val;
+
+      if (val.trim() !== '') {
+        marqueeText.innerText = val;
+        dayEventTitleInput.classList.add('hidden');
+        dayEventMarquee.classList.remove('hidden');
+      } else {
+        dayEventTitleInput.classList.remove('hidden');
+        dayEventMarquee.classList.add('hidden');
+      }
+
+      if (isAdminLoggedIn) {
+        dayEventTitleInput.removeAttribute('readonly');
+        dayEventTitleInput.classList.remove('cursor-not-allowed');
+      } else {
+        dayEventTitleInput.setAttribute('readonly', 'readonly');
+        dayEventTitleInput.classList.add('cursor-not-allowed');
+      }
+    }
+
+    // 點擊跑馬燈區域進入編輯狀態
+    marqueeContainer.addEventListener('click', () => {
+      if (!isAdminLoggedIn) return;
+      dayEventMarquee.classList.add('hidden');
+      dayEventTitleInput.classList.remove('hidden');
+      dayEventTitleInput.focus();
+    });
+
+    dayEventTitleInput.addEventListener('blur', () => {
+      if (!isAdminLoggedIn) return;
+      if (!bookings[currentDate]) {
+        bookings[currentDate] = { eventTitle: '', nightOnly: false, slots: {} };
+      }
+      bookings[currentDate].eventTitle = dayEventTitleInput.value;
+      saveData();
+      updateEventBannerDisplay();
+    });
+
+    dayEventTitleInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        dayEventTitleInput.blur();
+      }
+    });
+
+    function getActiveTimeSlots() {
+      const isNightOnly = bookings[currentDate] && bookings[currentDate].nightOnly;
+      if (isNightOnly) {
+        return [
+          { time: '18:00 ~ 19:00', originalIdx: 11 },
+          { time: '19:00 ~ 20:00', originalIdx: 12 },
+          { time: '20:00 ~ 21:00', originalIdx: 13 }
+        ];
+      } else {
+        return ALL_TIME_SLOTS.map((time, idx) => ({ time, originalIdx: idx }));
+      }
+    }
+
+    function renderCoachSelect(selectedCoach = '') {
+      selectCoach.innerHTML = '<option value="">-- 無指定教練 --</option>';
+      coachList.forEach(coach => {
+        const opt = document.createElement('option');
+        opt.value = coach;
+        opt.innerText = coach;
+        if (coach === selectedCoach) opt.selected = true;
+        selectCoach.appendChild(opt);
+      });
+
+      if (isAdminLoggedIn) {
+        const addOpt = document.createElement('option');
+        addOpt.value = '__ADD_NEW_COACH__';
+        addOpt.innerText = '➕ 新增自訂教練...';
+        selectCoach.appendChild(addOpt);
+      }
+    }
+
+    selectCoach.addEventListener('change', (e) => {
+      if (e.target.value === '__ADD_NEW_COACH__') {
+        const newCoach = prompt('請輸入新教練的名稱：');
+        if (newCoach && newCoach.trim() !== '') {
+          const trimmed = newCoach.trim();
+          if (!coachList.includes(trimmed)) {
+            coachList.push(trimmed);
+            localStorage.setItem('badminton_coach_list', JSON.stringify(coachList));
+          }
+          renderCoachSelect(trimmed);
+        } else {
+          selectCoach.value = '';
+        }
+      }
+    });
+
+    // 管理員登入控制
+    adminLoginBtn.addEventListener('click', () => {
+      if (isAdminLoggedIn) {
+        if (confirm('確定要登出管理員身分嗎？登出後將切換為唯讀檢視模式。')) {
+          isAdminLoggedIn = false;
+          updateAdminUIState();
           renderGrid();
         }
       } else {
         adminPasswordInput.value = '';
-        adminLoginError.classList.add('hidden');
-        adminLoginModal.classList.remove('hidden');
+        loginModal.classList.remove('hidden');
         adminPasswordInput.focus();
       }
     });
 
-    closeAdminModalBtn.addEventListener('click', () => adminLoginModal.classList.add('hidden'));
-    cancelAdminLogin.addEventListener('click', () => adminLoginModal.classList.add('hidden'));
-
-    submitAdminLogin.addEventListener('click', () => {
+    submitLoginBtn.addEventListener('click', () => {
       if (adminPasswordInput.value === '88888888') {
-        isAdmin = true;
-        sessionStorage.setItem('badminton_is_admin', 'true');
-        adminLoginModal.classList.add('hidden');
-        updateAdminUI();
+        isAdminLoggedIn = true;
+        loginModal.classList.add('hidden');
+        updateAdminUIState();
         renderGrid();
-        alert('管理者登入成功！現在您可以進行預約與資料修改。');
+        alert('管理員登入成功！已解鎖預約與修改權限。');
       } else {
-        adminLoginError.classList.remove('hidden');
-        adminPasswordInput.focus();
+        alert('密碼錯誤！');
       }
     });
 
-    adminPasswordInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        submitAdminLogin.click();
+    closeLoginBtn.addEventListener('click', () => loginModal.classList.add('hidden'));
+
+    // 教練管理視窗
+    manageCoachesBtn.addEventListener('click', () => {
+      renderCoachManageList();
+      coachManageModal.classList.remove('hidden');
+    });
+    closeCoachModalBtn.addEventListener('click', () => coachManageModal.classList.add('hidden'));
+
+    function renderCoachManageList() {
+      coachManageList.innerHTML = '';
+      if (coachList.length === 0) {
+        coachManageList.innerHTML = '<div class="text-xs text-slate-400 text-center py-2">目前無教練名單</div>';
+        return;
+      }
+      coachList.forEach((coach, index) => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between gap-2 bg-slate-50 p-2 rounded-md border border-slate-200';
+        row.innerHTML = `
+          <input type="text" value="${coach}" class="flex-1 text-xs p-1.5 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500" data-index="${index}" id="coach-edit-${index}">
+          <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded text-xs transition save-coach-edit" data-index="${index}">修改</button>
+          <button class="bg-rose-600 hover:bg-rose-500 text-white px-2.5 py-1.5 rounded text-xs transition delete-coach-btn" data-index="${index}">刪除</button>
+        `;
+        coachManageList.appendChild(row);
+      });
+
+      coachManageList.querySelectorAll('.save-coach-edit').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = e.target.dataset.index;
+          const val = document.getElementById(`coach-edit-${idx}`).value.trim();
+          if (val) {
+            coachList[idx] = val;
+            localStorage.setItem('badminton_coach_list', JSON.stringify(coachList));
+            alert('教練名稱已更新！');
+            renderGrid();
+          }
+        });
+      });
+
+      coachManageList.querySelectorAll('.delete-coach-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = e.target.dataset.index;
+          if (confirm(`確定要刪除教練「${coachList[idx]}」嗎？`)) {
+            coachList.splice(idx, 1);
+            localStorage.setItem('badminton_coach_list', JSON.stringify(coachList));
+            renderCoachManageList();
+            renderGrid();
+          }
+        });
+      });
+    }
+
+    addCoachSubmitBtn.addEventListener('click', () => {
+      const val = newCoachInput.value.trim();
+      if (val && !coachList.includes(val)) {
+        coachList.push(val);
+        localStorage.setItem('badminton_coach_list', JSON.stringify(coachList));
+        newCoachInput.value = '';
+        renderCoachManageList();
+        renderGrid();
+      } else {
+        alert('請輸入有效或未重複的教練名稱！');
       }
     });
 
-    // --- Mode Toggle Function ---
+    nightOnlyCheckbox.addEventListener('change', (e) => {
+      if (!isAdminLoggedIn) return;
+      if (!bookings[currentDate]) {
+        bookings[currentDate] = { eventTitle: '', nightOnly: false, slots: {} };
+      }
+      bookings[currentDate].nightOnly = e.target.checked;
+      saveData();
+      renderGrid();
+    });
+
     function updateViewModeUI() {
       if (isMobileView) {
         modeIcon.className = 'fa-solid fa-desktop';
         modeText.innerText = '切換電腦模式';
         modeBadge.innerText = '手機清單模式';
         modeBadge.className = 'text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-medium border border-amber-500/40';
-        
         mainContainer.className = 'bg-transparent rounded-none shadow-none border-none overflow-visible w-full';
         gridTable.className = 'block space-y-3';
       } else {
@@ -462,7 +648,6 @@
         modeText.innerText = '切換手機模式';
         modeBadge.innerText = 'Excel 模式';
         modeBadge.className = 'text-[10px] bg-emerald-700/80 text-emerald-200 px-1.5 py-0.5 rounded font-normal border border-emerald-600';
-        
         mainContainer.className = 'bg-white rounded-lg shadow-md border border-slate-300 overflow-hidden flex-1 flex flex-col min-w-[1000px]';
         gridTable.className = 'divide-y divide-slate-200 flex-1 flex flex-col';
       }
@@ -475,25 +660,20 @@
       renderGrid();
     });
 
-    // --- Render Functions ---
     function renderDateTabs() {
       dateTabsBar.innerHTML = '';
       const curr = new Date(currentDate);
-      
       for (let i = -3; i <= 3; i++) {
         const d = new Date(curr);
         d.setDate(d.getDate() + i);
         const dStr = d.toISOString().split('T')[0];
-        
         const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
         const label = `${d.getMonth()+1}/${d.getDate()} (${weekDays[d.getDay()]})`;
         const isActive = dStr === currentDate;
 
         const tab = document.createElement('button');
         tab.className = `px-2.5 py-1 rounded-t-md font-medium text-xs transition border-t border-x shrink-0 ${
-          isActive 
-            ? 'bg-white text-emerald-800 border-slate-300 font-bold shadow-sm' 
-            : 'bg-slate-200 hover:bg-slate-100 text-slate-600 border-transparent'
+          isActive ? 'bg-white text-emerald-800 border-slate-300 font-bold shadow-sm' : 'bg-slate-200 hover:bg-slate-100 text-slate-600 border-transparent'
         }`;
         tab.innerText = label;
         tab.onclick = () => {
@@ -510,40 +690,41 @@
 
     function renderGrid() {
       gridTable.innerHTML = '';
-      const dayData = bookings[currentDate] || { eventTitle: '', slots: {} };
+      const dayData = bookings[currentDate] || { eventTitle: '', nightOnly: false, slots: {} };
+      updateEventBannerDisplay();
       
-      dayEventTitleInput.value = dayData.eventTitle || '';
+      const isNightOnly = !!dayData.nightOnly;
+      const activeSlots = getActiveTimeSlots();
 
       if (isMobileView) {
-        // --- Mobile List View (Grouped by Courts 1, 2, 3) ---
         COURTS.forEach((courtName, cIdx) => {
           const courtCard = document.createElement('div');
           courtCard.className = 'mb-4 bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden';
-          
+          let subTitleInfo = isNightOnly ? '18:00 ~ 21:00 時段' : '07:00 ~ 21:00 時段';
           let cardHeaderHtml = `
             <div class="bg-emerald-900 text-white font-bold px-3 py-2 text-xs flex items-center justify-between">
               <span><i class="fa-solid fa-vector-square mr-1.5 text-amber-400"></i> ${courtName}</span>
-              <span class="text-[10px] text-emerald-200 font-normal">07:00 ~ 21:00 時段</span>
+              <span class="text-[10px] text-emerald-200 font-normal">${subTitleInfo}</span>
             </div>
             <div class="grid grid-cols-1 divide-y divide-slate-100">
           `;
 
           let cardSlotsHtml = '';
-          TIME_SLOTS.forEach((time, tIdx) => {
-            const slotKey = `${cIdx}_${tIdx}`;
+          activeSlots.forEach(({ time, originalIdx }) => {
+            const slotKey = `${cIdx}_${originalIdx}`;
             const isSelected = selectedCells.has(slotKey);
             const booking = dayData.slots ? dayData.slots[slotKey] : null;
 
-            let slotBg = 'bg-white hover:bg-slate-50 cursor-pointer';
+            let slotBg = 'bg-white hover:bg-slate-50';
             let statusText = '<span class="text-slate-400 text-xs">可預約</span>';
 
             if (booking) {
               if (booking.type === 'club') {
-                slotBg = 'bg-amber-50 hover:bg-amber-100/80 cursor-pointer';
+                slotBg = 'bg-amber-50 hover:bg-amber-100/80';
                 statusText = `<span class="text-xs font-bold text-amber-800"><i class="fa-solid fa-users mr-1"></i>社團包場</span>`;
               } else {
-                slotBg = 'bg-emerald-50 hover:bg-emerald-100/80 cursor-pointer';
-                const coachStr = booking.coach ? `<span class="text-emerald-700 font-normal ml-1">(${booking.coach})</span>` : '';
+                slotBg = 'bg-emerald-50 hover:bg-emerald-100/80';
+                const coachStr = booking.coach ? `<span class="text-emerald-800 font-normal ml-1">(${booking.coach})</span>` : '';
                 statusText = `
                   <div class="text-right">
                     <span class="text-xs font-bold text-emerald-900">${booking.student}</span>${coachStr}
@@ -554,11 +735,11 @@
             }
 
             if (isSelected) {
-              slotBg = 'bg-emerald-200/90 border-l-4 border-emerald-600 cursor-pointer';
+              slotBg = 'bg-emerald-200/90 border-l-4 border-emerald-600';
             }
 
             cardSlotsHtml += `
-              <div class="px-3 py-2.5 flex items-center justify-between transition ${slotBg}" data-key="${slotKey}">
+              <div class="px-3 py-2.5 flex items-center justify-between cursor-pointer transition ${slotBg}" data-key="${slotKey}">
                 <div class="flex items-center gap-2">
                   <div class="text-xs font-mono font-semibold text-slate-600">${time}</div>
                   ${isSelected ? `<i class="fa-solid fa-circle-check text-emerald-700 text-xs"></i>` : ''}
@@ -573,28 +754,25 @@
         });
 
       } else {
-        // --- Desktop Excel Grid View ---
-        // 1. Time Header Row (X-Axis)
         const headerRow = document.createElement('div');
         headerRow.className = 'flex bg-slate-100 text-slate-700 font-semibold text-xs border-b border-slate-300 sticky-header';
         
         let headerHtml = `<div class="w-20 sm:w-24 p-1.5 text-center bg-slate-200 border-r border-slate-300 shrink-0 sticky-col font-bold flex items-center justify-center text-[11px]">場地 / 時間</div>`;
-        TIME_SLOTS.forEach(time => {
+        activeSlots.forEach(({ time }) => {
           const shortTime = time.replace(' ~ ', '-');
           headerHtml += `<div class="flex-1 min-w-[65px] p-1 text-center border-r border-slate-200 text-[10px] xl:text-[11px] flex items-center justify-center font-mono leading-tight">${shortTime}</div>`;
         });
         headerRow.innerHTML = headerHtml;
         gridTable.appendChild(headerRow);
 
-        // 2. Court Rows (Y-Axis)
         COURTS.forEach((courtName, cIdx) => {
           const row = document.createElement('div');
           row.className = 'flex flex-1 border-b border-slate-200 hover:bg-slate-50/50 transition min-h-[50px]';
 
           let rowHtml = `<div class="w-20 sm:w-24 p-2 text-center bg-slate-100 font-bold text-slate-800 border-r border-slate-300 shrink-0 sticky-col flex items-center justify-center text-xs sm:text-sm">${courtName}</div>`;
 
-          TIME_SLOTS.forEach((time, tIdx) => {
-            const slotKey = `${cIdx}_${tIdx}`;
+          activeSlots.forEach(({ time, originalIdx }) => {
+            const slotKey = `${cIdx}_${originalIdx}`;
             const isSelected = selectedCells.has(slotKey);
             const booking = dayData.slots ? dayData.slots[slotKey] : null;
 
@@ -607,11 +785,11 @@
                 contentHtml = `<div class="text-[11px]">社團</div>`;
               } else {
                 cellClass = 'bg-emerald-100/90 hover:bg-emerald-200/90 border-emerald-300 text-emerald-900';
-                const coachStr = booking.coach ? `<span class="text-[10px] block opacity-80">${booking.coach}</span>` : '';
+                const coachStr = booking.coach ? `<span class="text-xs block opacity-90 text-emerald-800 font-normal">(${booking.coach})</span>` : '';
                 contentHtml = `
-                  <div class="font-bold text-[11px] leading-tight truncate px-0.5">${booking.student}</div>
+                  <div class="font-bold text-xs leading-tight truncate px-0.5">${booking.student}</div>
                   ${coachStr}
-                  ${booking.timeNote ? `<div class="text-[9px] text-emerald-800 font-mono scale-90 leading-none mt-0.5">${booking.timeNote}</div>` : ''}
+                  ${booking.timeNote ? `<div class="text-[10px] text-emerald-800 font-mono scale-95 leading-none mt-0.5">${booking.timeNote}</div>` : ''}
                 `;
               }
             }
@@ -633,25 +811,16 @@
         });
       }
 
-      // Attach Click Event with Permission Check
       gridTable.querySelectorAll('[data-key]').forEach(cell => {
         cell.addEventListener('click', () => {
           const key = cell.dataset.key;
           const daySlots = (bookings[currentDate] && bookings[currentDate].slots) || {};
-
+          
           if (daySlots[key]) {
-            if (isAdmin) {
-              openEditModal(key, daySlots[key]);
-            } else {
-              const b = daySlots[key];
-              const typeStr = b.type === 'club' ? '社團包場' : '學員個人練習';
-              const coachStr = b.coach ? `指導教練：${b.coach}\n` : '';
-              const noteStr = b.timeNote ? `時間備註：${b.timeNote}\n` : '';
-              alert(`【預約資訊檢視】\n類型：${typeStr}\n預約人/學員：${b.student}\n${coachStr}${noteStr}\n（目前為訪客唯讀模式，如需修改請先點擊右上角「管理者登入」）`);
-            }
+            openEditModal(key, daySlots[key]);
           } else {
-            if (!isAdmin) {
-              alert('【提示】目前為訪客唯讀模式，無法進行預約。如需新增預約，請先點擊右上角進行「管理者登入」。');
+            if (!isAdminLoggedIn) {
+              alert('非管理者僅供檢視，請先登入管理員身分進行預約操作！');
               return;
             }
             if (selectedCells.has(key)) {
@@ -667,7 +836,7 @@
     }
 
     function updateActionBar() {
-      if (isAdmin && selectedCells.size > 0) {
+      if (isAdminLoggedIn && selectedCells.size > 0) {
         selectedCountEl.innerText = selectedCells.size;
         actionBar.classList.remove('translate-y-24', 'opacity-0');
       } else {
@@ -677,48 +846,72 @@
 
     function renderAll() {
       datePicker.value = currentDate;
-      updateAdminUI();
+      updateAdminUIState();
       updateViewModeUI();
       renderDateTabs();
       setupFirestoreListener();
       updateActionBar();
     }
 
-    // --- Modal Actions ---
     function openBatchModal() {
-      if (!isAdmin) return;
+      if (!isAdminLoggedIn) return;
       currentEditKey = null;
       deleteBookingBtn.classList.add('hidden');
+      saveBookingBtn.classList.remove('hidden');
       document.getElementById('modal-title').innerText = '新增批次預約';
-      
       inputStudent.value = '';
-      inputCoach.value = '';
+      inputStudent.removeAttribute('disabled');
+      selectCoach.removeAttribute('disabled');
+      inputTimeNote.removeAttribute('disabled');
+      typePersonalBtn.removeAttribute('disabled');
+      typeClubBtn.removeAttribute('disabled');
+      
+      renderCoachSelect('');
       inputTimeNote.value = '';
       setBookingType('personal');
 
       let summaryHtml = '<div class="font-bold mb-1">已選擇以下時段格：</div>';
       selectedCells.forEach(key => {
         const [cIdx, tIdx] = key.split('_').map(Number);
-        summaryHtml += `<div>• ${COURTS[cIdx]} - ${TIME_SLOTS[tIdx]}</div>`;
+        summaryHtml += `<div>• ${COURTS[cIdx]} - ${ALL_TIME_SLOTS[tIdx]}</div>`;
       });
       modalSlotsSummary.innerHTML = summaryHtml;
-
       bookingModal.classList.remove('hidden');
     }
 
     function openEditModal(key, data) {
-      if (!isAdmin) return;
       currentEditKey = key;
-      deleteBookingBtn.classList.remove('hidden');
-      document.getElementById('modal-title').innerText = '編輯/取消預約';
-
       const [cIdx, tIdx] = key.split('_').map(Number);
-      modalSlotsSummary.innerHTML = `<div class="font-bold">${COURTS[cIdx]} - ${TIME_SLOTS[tIdx]}</div>`;
-
+      modalSlotsSummary.innerHTML = `<div class="font-bold">${COURTS[cIdx]} - ${ALL_TIME_SLOTS[tIdx]}</div>`;
       setBookingType(data.type || 'personal');
+      
       inputStudent.value = data.student || '';
-      inputCoach.value = data.coach || '';
+      renderCoachSelect(data.coach || '');
       inputTimeNote.value = data.timeNote || '';
+
+      if (isAdminLoggedIn) {
+        document.getElementById('modal-title').innerText = '編輯/取消預約';
+        deleteBookingBtn.classList.remove('hidden');
+        saveBookingBtn.classList.remove('hidden');
+        cancelModalAction.innerText = '取消';
+        
+        inputStudent.removeAttribute('disabled');
+        selectCoach.removeAttribute('disabled');
+        inputTimeNote.removeAttribute('disabled');
+        typePersonalBtn.removeAttribute('disabled');
+        typeClubBtn.removeAttribute('disabled');
+      } else {
+        document.getElementById('modal-title').innerText = '預約詳情 (唯讀)';
+        deleteBookingBtn.classList.add('hidden');
+        saveBookingBtn.classList.add('hidden');
+        cancelModalAction.innerText = '關閉';
+
+        inputStudent.setAttribute('disabled', 'disabled');
+        selectCoach.setAttribute('disabled', 'disabled');
+        inputTimeNote.setAttribute('disabled', 'disabled');
+        typePersonalBtn.setAttribute('disabled', 'disabled');
+        typeClubBtn.setAttribute('disabled', 'disabled');
+      }
 
       bookingModal.classList.remove('hidden');
     }
@@ -738,25 +931,21 @@
       }
     }
 
-    // --- Save Booking Handler ---
     saveBookingBtn.addEventListener('click', () => {
-      if (!isAdmin) return;
+      if (!isAdminLoggedIn) return;
       if (!bookings[currentDate]) {
-        bookings[currentDate] = { eventTitle: dayEventTitleInput.value, slots: {} };
+        bookings[currentDate] = { eventTitle: dayEventTitleInput.value, nightOnly: false, slots: {} };
       }
-
       const bookingPayload = {
         type: currentBookingType,
         student: currentBookingType === 'personal' ? inputStudent.value.trim() : '社團',
-        coach: currentBookingType === 'personal' ? inputCoach.value.trim() : '',
+        coach: currentBookingType === 'personal' ? selectCoach.value.trim() : '',
         timeNote: currentBookingType === 'personal' ? inputTimeNote.value.trim() : ''
       };
-
       if (currentBookingType === 'personal' && !bookingPayload.student) {
         alert('請填寫學員姓名！');
         return;
       }
-
       if (currentEditKey) {
         bookings[currentDate].slots[currentEditKey] = bookingPayload;
       } else {
@@ -765,7 +954,6 @@
         });
         selectedCells.clear();
       }
-
       saveData();
       bookingModal.classList.add('hidden');
       renderGrid();
@@ -773,7 +961,7 @@
     });
 
     deleteBookingBtn.addEventListener('click', () => {
-      if (!isAdmin) return;
+      if (!isAdminLoggedIn) return;
       if (currentEditKey && bookings[currentDate] && bookings[currentDate].slots) {
         delete bookings[currentDate].slots[currentEditKey];
         saveData();
@@ -782,7 +970,6 @@
       }
     });
 
-    // --- Event Listeners ---
     datePicker.addEventListener('change', (e) => {
       currentDate = e.target.value;
       selectedCells.clear();
@@ -820,7 +1007,7 @@
     });
 
     clearDayBtn.addEventListener('click', () => {
-      if (!isAdmin) return;
+      if (!isAdminLoggedIn) return;
       if (confirm('確定要清空當日所有的預約紀錄嗎？')) {
         if (bookings[currentDate]) {
           bookings[currentDate].slots = {};
@@ -828,15 +1015,6 @@
           renderGrid();
         }
       }
-    });
-
-    dayEventTitleInput.addEventListener('change', (e) => {
-      if (!isAdmin) return;
-      if (!bookings[currentDate]) {
-        bookings[currentDate] = { eventTitle: '', slots: {} };
-      }
-      bookings[currentDate].eventTitle = e.target.value;
-      saveData();
     });
 
     cancelSelectionBtn.addEventListener('click', () => {
@@ -848,16 +1026,10 @@
     openBookingModalBtn.addEventListener('click', openBatchModal);
     closeModalBtn.addEventListener('click', () => bookingModal.classList.add('hidden'));
     cancelModalAction.addEventListener('click', () => bookingModal.classList.add('hidden'));
+    typePersonalBtn.addEventListener('click', () => { if (isAdminLoggedIn) setBookingType('personal'); });
+    typeClubBtn.addEventListener('click', () => { if (isAdminLoggedIn) setBookingType('club'); });
 
-    typePersonalBtn.addEventListener('click', () => setBookingType('personal'));
-    typeClubBtn.addEventListener('click', () => setBookingType('club'));
-
-    // --- Initialization ---
-    window.addEventListener('firebase-init', () => {
-      renderAll();
-    });
-
-    // 逾時防護機制：若 Firebase 載入稍慢，500ms 後若尚未觸發則直接用 LocalStorage 初始化
+    window.addEventListener('firebase-init', () => { renderAll(); });
     setTimeout(() => {
       if (!window.db) {
         loadLocalStorageFallback();

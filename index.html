@@ -45,7 +45,7 @@
     .sticky-col { position: sticky; left: 0; z-index: 20; }
     .sticky-header { position: sticky; top: 0; z-index: 10; }
 
-    /* 跑馬燈動畫動畫 Keyframes */
+    /* 跑馬燈動畫 Keyframes */
     @keyframes marquee {
       0% { transform: translateX(100%); }
       100% { transform: translateX(-100%); }
@@ -127,17 +127,19 @@
       
       <!-- 放大與跑馬燈效果容器 -->
       <div class="relative flex-1 overflow-hidden bg-indigo-900/90 rounded border border-amber-400/60 h-9 flex items-center px-2 cursor-pointer" id="marquee-container" title="點擊進行編輯">
-        <!-- 輸入框 (未觸發跑馬燈或編輯中顯示) -->
         <input type="text" id="day-event-title" readonly placeholder="點擊設定活動標記 (如：摩亞盃...)" class="w-full bg-transparent text-amber-300 font-black text-base sm:text-lg px-1 focus:outline-none placeholder-indigo-300/50 tracking-wide cursor-not-allowed">
-        
-        <!-- 跑馬燈顯示區 (輸入完成後顯示) -->
         <div id="day-event-marquee" class="hidden w-full overflow-hidden text-amber-300 font-black text-base sm:text-xl tracking-wider select-none">
           <div id="marquee-text" class="animate-marquee"></div>
         </div>
       </div>
     </div>
 
-    <div class="flex items-center gap-3 shrink-0">
+    <div class="flex items-center gap-2 shrink-0">
+      <!-- 統計報表按鈕（限管理者登入顯示） -->
+      <button id="open-stats-btn" class="hidden bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-2.5 py-1.5 rounded-lg text-xs transition shadow border border-amber-400 flex items-center gap-1">
+        <i class="fa-solid fa-chart-pie"></i> 統計報表
+      </button>
+
       <!-- 僅限管理者登入後顯示的當日晚間時段切換控制 -->
       <label id="night-toggle-wrapper" class="hidden items-center gap-1.5 bg-indigo-900/80 hover:bg-indigo-900 px-3 py-1.5 rounded-lg border border-indigo-700 text-xs text-indigo-200 cursor-pointer select-none transition">
         <input type="checkbox" id="night-only-checkbox" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 accent-emerald-600 cursor-pointer">
@@ -266,12 +268,86 @@
         <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-user-gear text-indigo-600"></i> 教練名單管理</h3>
         <button id="close-coach-modal-btn" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-base"></i></button>
       </div>
-      <div class="space-y-2 max-h-60 overflow-y-auto pr-1" id="coach-manage-list">
-        <!-- JS 產出教練清單供修改/刪除 -->
-      </div>
+      <div class="space-y-2 max-h-60 overflow-y-auto pr-1" id="coach-manage-list"></div>
       <div class="flex gap-2 pt-2 border-t">
         <input type="text" id="new-coach-input" placeholder="新增教練名稱..." class="flex-1 text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
         <button id="add-coach-submit-btn" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-xs font-medium transition">新增</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 統計報表 Modal (新增) -->
+  <div id="stats-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="p-4 bg-amber-600 text-white flex items-center justify-between shrink-0">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>個人練習時間統計表</span>
+        </h3>
+        <button id="close-stats-modal-btn" class="text-amber-100 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-4 space-y-4 flex-1 overflow-y-auto">
+        <!-- 控制選擇區域 -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">統計類型</label>
+            <select id="stats-type-select" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
+              <option value="coach">依指導教練</option>
+              <option value="student">依學員姓名</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">對象名稱</label>
+            <select id="stats-target-select" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
+              <!-- 動態產出 -->
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">時間範圍</label>
+            <select id="stats-range-select" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
+              <option value="all">跨日總計 (全部紀錄)</option>
+              <option value="current">僅當日統計</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 統計摘要卡片 -->
+        <div id="stats-summary-card" class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 flex items-center justify-between">
+          <div>
+            <span class="font-bold">統計對象：</span><span id="stats-target-label" class="font-bold text-amber-700">--</span>
+          </div>
+          <div>
+            <span class="font-bold">總個練時段：</span><span id="stats-total-hours" class="font-black text-amber-700 text-base">0</span> 個時段 (約 <span id="stats-total-hours-calc">0</span> 小時)
+          </div>
+        </div>
+
+        <!-- 詳細紀錄表格 -->
+        <div class="border border-slate-200 rounded-lg overflow-hidden">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                <th class="p-2 border-r">日期</th>
+                <th class="p-2 border-r">場地</th>
+                <th class="p-2 border-r">時段</th>
+                <th class="p-2 border-r">學員</th>
+                <th class="p-2 border-r">指導教練</th>
+                <th class="p-2">時間備註</th>
+              </tr>
+            </thead>
+            <tbody id="stats-table-body" class="divide-y divide-slate-100">
+              <!-- JS 動態寫入 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="p-3 border-t border-slate-200 bg-slate-50 flex justify-end shrink-0">
+        <button id="close-stats-btn-bottom" class="px-4 py-1.5 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-xs font-medium transition shadow">關閉</button>
       </div>
     </div>
   </div>
@@ -373,6 +449,7 @@
     const dayEventMarquee = document.getElementById('day-event-marquee');
     const marqueeText = document.getElementById('marquee-text');
 
+    const openStatsBtn = document.getElementById('open-stats-btn');
     const nightOnlyCheckbox = document.getElementById('night-only-checkbox');
     const nightToggleWrapper = document.getElementById('night-toggle-wrapper');
     const manageCoachesBtn = document.getElementById('manage-coaches-btn');
@@ -397,6 +474,17 @@
     const coachManageList = document.getElementById('coach-manage-list');
     const newCoachInput = document.getElementById('new-coach-input');
     const addCoachSubmitBtn = document.getElementById('add-coach-submit-btn');
+
+    const statsModal = document.getElementById('stats-modal');
+    const closeStatsModalBtn = document.getElementById('close-stats-modal-btn');
+    const closeStatsBtnBottom = document.getElementById('close-stats-btn-bottom');
+    const statsTypeSelect = document.getElementById('stats-type-select');
+    const statsTargetSelect = document.getElementById('stats-target-select');
+    const statsRangeSelect = document.getElementById('stats-range-select');
+    const statsTargetLabel = document.getElementById('stats-target-label');
+    const statsTotalHours = document.getElementById('stats-total-hours');
+    const statsTotalHoursCalc = document.getElementById('stats-total-hours-calc');
+    const statsTableBody = document.getElementById('stats-table-body');
 
     const actionBar = document.getElementById('action-bar');
     const selectedCountEl = document.getElementById('selected-count');
@@ -423,6 +511,7 @@
         nightToggleWrapper.classList.remove('hidden');
         nightToggleWrapper.classList.add('flex');
         manageCoachesBtn.classList.remove('hidden');
+        openStatsBtn.classList.remove('hidden');
         adminLockIcon.className = 'fa-solid fa-lock-open';
         adminBtnText.innerText = '管理員登出';
         adminLoginBtn.className = 'bg-rose-600 hover:bg-rose-500 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1 shrink-0';
@@ -430,6 +519,7 @@
         clearDayBtn.classList.add('hidden');
         nightToggleWrapper.classList.add('hidden');
         manageCoachesBtn.classList.add('hidden');
+        openStatsBtn.classList.add('hidden');
         adminLockIcon.className = 'fa-solid fa-lock';
         adminBtnText.innerText = '管理員登入';
         adminLoginBtn.className = 'bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1 shrink-0';
@@ -439,7 +529,6 @@
       updateEventBannerDisplay();
     }
 
-    // 跑馬燈與輸入框視角控制
     function updateEventBannerDisplay() {
       const val = (bookings[currentDate] && bookings[currentDate].eventTitle) || '';
       dayEventTitleInput.value = val;
@@ -462,7 +551,6 @@
       }
     }
 
-    // 點擊跑馬燈區域進入編輯狀態
     marqueeContainer.addEventListener('click', () => {
       if (!isAdminLoggedIn) return;
       dayEventMarquee.classList.add('hidden');
@@ -485,6 +573,127 @@
         dayEventTitleInput.blur();
       }
     });
+
+    // 統計報表邏輯
+    openStatsBtn.addEventListener('click', () => {
+      if (!isAdminLoggedIn) return;
+      populateStatsTargetSelect();
+      renderStatsData();
+      statsModal.classList.remove('hidden');
+    });
+
+    closeStatsModalBtn.addEventListener('click', () => statsModal.classList.add('hidden'));
+    closeStatsBtnBottom.addEventListener('click', () => statsModal.classList.add('hidden'));
+
+    statsTypeSelect.addEventListener('change', () => {
+      populateStatsTargetSelect();
+      renderStatsData();
+    });
+    statsTargetSelect.addEventListener('change', renderStatsData);
+    statsRangeSelect.addEventListener('change', renderStatsData);
+
+    function populateStatsTargetSelect() {
+      const type = statsTypeSelect.value;
+      statsTargetSelect.innerHTML = '';
+
+      if (type === 'coach') {
+        coachList.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c;
+          opt.innerText = c;
+          statsTargetSelect.appendChild(opt);
+        });
+      } else {
+        // 蒐集所有預約過學員的名稱
+        const studentSet = new Set();
+        Object.keys(bookings).forEach(date => {
+          const slots = bookings[date].slots || {};
+          Object.values(slots).forEach(slot => {
+            if (slot.type === 'personal' && slot.student) {
+              studentSet.add(slot.student);
+            }
+          });
+        });
+        if (studentSet.size === 0) {
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.innerText = '-- 無學員紀錄 --';
+          statsTargetSelect.appendChild(opt);
+        } else {
+          studentSet.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s;
+            opt.innerText = s;
+            statsTargetSelect.appendChild(opt);
+          });
+        }
+      }
+    }
+
+    function renderStatsData() {
+      const type = statsTypeSelect.value;
+      const target = statsTargetSelect.value;
+      const range = statsRangeSelect.value;
+
+      statsTargetLabel.innerText = target || '(無選項)';
+      statsTableBody.innerHTML = '';
+
+      if (!target) {
+        statsTotalHours.innerText = '0';
+        statsTotalHoursCalc.innerText = '0';
+        statsTableBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">目前無資料</td></tr>';
+        return;
+      }
+
+      let matchedSlots = [];
+
+      const targetDates = (range === 'current') ? [currentDate] : Object.keys(bookings);
+
+      targetDates.forEach(dStr => {
+        const daySlots = (bookings[dStr] && bookings[dStr].slots) || {};
+        Object.keys(daySlots).forEach(sKey => {
+          const slot = daySlots[sKey];
+          if (slot.type === 'personal') {
+            const isMatch = (type === 'coach' && slot.coach === target) || (type === 'student' && slot.student === target);
+            if (isMatch) {
+              const [cIdx, tIdx] = sKey.split('_').map(Number);
+              matchedSlots.push({
+                date: dStr,
+                court: COURTS[cIdx],
+                time: ALL_TIME_SLOTS[tIdx],
+                student: slot.student,
+                coach: slot.coach || '無',
+                timeNote: slot.timeNote || '-'
+              });
+            }
+          }
+        });
+      });
+
+      // 按日期升冪排序
+      matchedSlots.sort((a, b) => a.date.localeCompare(b.date));
+
+      statsTotalHours.innerText = matchedSlots.length;
+      statsTotalHoursCalc.innerText = matchedSlots.length;
+
+      if (matchedSlots.length === 0) {
+        statsTableBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">查無相關預約個練紀錄</td></tr>';
+      } else {
+        matchedSlots.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-amber-50/50 transition';
+          tr.innerHTML = `
+            <td class="p-2 border-r font-mono">${item.date}</td>
+            <td class="p-2 border-r font-bold">${item.court}</td>
+            <td class="p-2 border-r font-mono">${item.time}</td>
+            <td class="p-2 border-r font-bold text-emerald-900">${item.student}</td>
+            <td class="p-2 border-r text-indigo-900">${item.coach}</td>
+            <td class="p-2 text-slate-500 font-mono">${item.timeNote}</td>
+          `;
+          statsTableBody.appendChild(tr);
+        });
+      }
+    }
 
     function getActiveTimeSlots() {
       const isNightOnly = bookings[currentDate] && bookings[currentDate].nightOnly;

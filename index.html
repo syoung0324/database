@@ -391,7 +391,7 @@
           <button id="export-excel-btn" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5">
             <i class="fa-solid fa-file-excel text-sm"></i> 📥 匯出當前對象報表
           </button>
-          <button id="export-all-students-excel-btn" class="px-3 py-1.5 bg-indigo-700 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5" title="自動選取該時間區間內全部個練學員，輸出完整總表">
+          <button id="export-all-students-excel-btn" class="px-3 py-1.5 bg-indigo-700 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5" title="自動選取該時間區間內全部個練學員，依教練分組輸出完整總表">
             <i class="fa-solid fa-users-rectangle text-sm"></i> 📥 匯出全體學員總表 (.xlsx)
           </button>
         </div>
@@ -435,7 +435,7 @@
 
     function getCoachObj(coachName) {
       const found = coachList.find(c => c.name === coachName);
-      return found || { name: coachName, rate1: 600, rate2: 400 };
+      return found || { name: coachName || '無', rate1: 600, rate2: 400 };
     }
 
     function setupFirestoreListener() {
@@ -880,7 +880,7 @@
       }
     }
 
-    // 📥 匯出當前對象報表
+    // 📥 匯出當前對象報表（自動依學員+教練分組）
     exportExcelBtn.addEventListener('click', async () => {
       const range = statsRangeSelect.value;
       let targetDates = [];
@@ -916,11 +916,12 @@
             const hasSlash = rawStudentStr.includes('/');
             const studentList = hasSlash ? rawStudentStr.split('/').map(n => n.trim()).filter(n => n !== '') : [rawStudentStr.trim()];
             const is1on2 = hasSlash;
-            const coachObj = getCoachObj(slot.coach);
+            const coachName = slot.coach || '無';
+            const coachObj = getCoachObj(coachName);
             const unitRate = is1on2 ? coachObj.rate2 : coachObj.rate1;
 
             studentList.forEach(singleStudent => {
-              const isMatch = (type === 'coach' && slot.coach === target) || (type === 'student' && singleStudent === target);
+              const isMatch = (type === 'coach' && coachName === target) || (type === 'student' && singleStudent === target);
               if (isMatch) {
                 const [cIdx, tIdx] = sKey.split('_').map(Number);
                 const dObj = new Date(dStr);
@@ -933,7 +934,7 @@
                 allSlots.push({
                   date: dStr,
                   student: singleStudent,
-                  coach: slot.coach || '無',
+                  coach: coachName,
                   formattedTime: formattedTime,
                   is1on2: is1on2,
                   unitRate: unitRate
@@ -951,12 +952,13 @@
 
       allSlots.sort((a, b) => a.date.localeCompare(b.date));
 
-      const studentMap = {};
+      // 以「學員名稱__教練名稱」作為唯一 Key，確保不同教練分開計算
+      const groupMap = {};
       allSlots.forEach(item => {
-        const sName = item.student;
-        if (!studentMap[sName]) {
-          studentMap[sName] = {
-            student: sName,
+        const mapKey = `${item.student}__${item.coach}`;
+        if (!groupMap[mapKey]) {
+          groupMap[mapKey] = {
+            student: item.student,
             coach: item.coach,
             times: [],
             hr1on1: 0,
@@ -964,13 +966,13 @@
             totalFee: 0
           };
         }
-        studentMap[sName].times.push(item.formattedTime);
+        groupMap[mapKey].times.push(item.formattedTime);
         if (item.is1on2) {
-          studentMap[sName].hr1on2 += 1;
+          groupMap[mapKey].hr1on2 += 1;
         } else {
-          studentMap[sName].hr1on1 += 1;
+          groupMap[mapKey].hr1on1 += 1;
         }
-        studentMap[sName].totalFee += item.unitRate;
+        groupMap[mapKey].totalFee += item.unitRate;
       });
 
       let dateTitleStr = range === 'custom' ? `${statsStartDateInput.value} ~ ${statsEndDateInput.value}` : range === 'current' ? currentDate : '個人練習統計表';
@@ -984,7 +986,7 @@
         [null, '姓名', '訓練時間', null, null, null, null, null, '一對一（hr）', '一對二（hr）', '費用', '教練']
       ];
 
-      Object.values(studentMap).forEach(sData => {
+      Object.values(groupMap).forEach(sData => {
         let rowData = [null, sData.student];
         for (let i = 0; i < 6; i++) {
           rowData.push(sData.times[i] || null);
@@ -1007,7 +1009,7 @@
       XLSX.writeFile(wb, `個練統計表_${target}_${currentDate}.xlsx`);
     });
 
-    // 📥 匯出全體學員總表 (.xlsx) - 自動納入該區間所有個練學員
+    // 📥 匯出全體學員總表 (.xlsx) - 自動依學員+教練獨立分組
     exportAllStudentsExcelBtn.addEventListener('click', async () => {
       const range = statsRangeSelect.value;
       let targetDates = [];
@@ -1040,7 +1042,8 @@
             const hasSlash = rawStudentStr.includes('/');
             const studentList = hasSlash ? rawStudentStr.split('/').map(n => n.trim()).filter(n => n !== '') : [rawStudentStr.trim()];
             const is1on2 = hasSlash;
-            const coachObj = getCoachObj(slot.coach);
+            const coachName = slot.coach || '無';
+            const coachObj = getCoachObj(coachName);
             const unitRate = is1on2 ? coachObj.rate2 : coachObj.rate1;
 
             studentList.forEach(singleStudent => {
@@ -1055,7 +1058,7 @@
               allSlots.push({
                 date: dStr,
                 student: singleStudent,
-                coach: slot.coach || '無',
+                coach: coachName,
                 formattedTime: formattedTime,
                 is1on2: is1on2,
                 unitRate: unitRate
@@ -1072,12 +1075,13 @@
 
       allSlots.sort((a, b) => a.date.localeCompare(b.date));
 
-      const studentMap = {};
+      // 以「學員名稱__教練名稱」作為唯一 Key，讓不同教練的紀錄分開成獨立行
+      const groupMap = {};
       allSlots.forEach(item => {
-        const sName = item.student;
-        if (!studentMap[sName]) {
-          studentMap[sName] = {
-            student: sName,
+        const mapKey = `${item.student}__${item.coach}`;
+        if (!groupMap[mapKey]) {
+          groupMap[mapKey] = {
+            student: item.student,
             coach: item.coach,
             times: [],
             hr1on1: 0,
@@ -1085,13 +1089,13 @@
             totalFee: 0
           };
         }
-        studentMap[sName].times.push(item.formattedTime);
+        groupMap[mapKey].times.push(item.formattedTime);
         if (item.is1on2) {
-          studentMap[sName].hr1on2 += 1;
+          groupMap[mapKey].hr1on2 += 1;
         } else {
-          studentMap[sName].hr1on1 += 1;
+          groupMap[mapKey].hr1on1 += 1;
         }
-        studentMap[sName].totalFee += item.unitRate;
+        groupMap[mapKey].totalFee += item.unitRate;
       });
 
       let dateRangeLabel = range === 'custom' ? `${statsStartDateInput.value} ~ ${statsEndDateInput.value}` : range === 'current' ? `當日 (${currentDate})` : '全體學員個練總表';
@@ -1105,7 +1109,7 @@
         [null, '姓名', '訓練時間', null, null, null, null, null, '一對一（hr）', '一對二（hr）', '費用', '教練']
       ];
 
-      Object.values(studentMap).forEach(sData => {
+      Object.values(groupMap).forEach(sData => {
         let rowData = [null, sData.student];
         for (let i = 0; i < 6; i++) {
           rowData.push(sData.times[i] || null);

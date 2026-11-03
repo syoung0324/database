@@ -1232,15 +1232,35 @@
       }
     });
 
-    submitLoginBtn.addEventListener('click', () => {
-      if (adminPasswordInput.value === '88888888') {
-        isAdminLoggedIn = true;
-        loginModal.classList.add('hidden');
-        updateAdminUIState();
-        renderGrid();
-        alert('管理員登入成功！已解鎖預約與修改權限。');
-      } else {
-        alert('密碼錯誤！');
+    submitLoginBtn.addEventListener('click', async () => {
+      const inputPwd = adminPasswordInput.value;
+      if (!window.db) {
+        alert('尚未連線至資料庫，無法進行遠端密碼驗證！');
+        return;
+      }
+
+      try {
+        const settingsRef = window.fsDoc(window.db, "settings", "auth");
+        const docSnap = await window.fsGetDoc(settingsRef);
+        
+        if (!docSnap.exists()) {
+          alert('資料庫中尚未設定管理員密碼，請先於 Firestore 建立 settings/auth 文件並設定 adminPassword 欄位！');
+          return;
+        }
+
+        const correctPwd = docSnap.data().adminPassword;
+        if (inputPwd === correctPwd) {
+          isAdminLoggedIn = true;
+          loginModal.classList.add('hidden');
+          updateAdminUIState();
+          renderGrid();
+          alert('管理員登入成功！已解鎖預約與修改權限。');
+        } else {
+          alert('密碼錯誤！');
+        }
+      } catch (e) {
+        console.error("驗證密碼失敗:", e);
+        alert('連線資料庫驗證密碼發生錯誤，請檢查網路或資料庫權限！');
       }
     });
 

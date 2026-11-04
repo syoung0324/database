@@ -133,14 +133,20 @@
       </div>
     </div>
 
-    <div class="flex items-center gap-2 shrink-0">
+    <div class="flex items-center gap-2 shrink-0 flex-wrap">
       <button id="open-stats-btn" class="hidden bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-2.5 py-1.5 rounded-lg text-xs transition shadow border border-amber-400 flex items-center gap-1">
         <i class="fa-solid fa-chart-pie"></i> 統計報表
       </button>
 
-      <label id="night-toggle-wrapper" class="hidden items-center gap-1.5 bg-indigo-900/80 hover:bg-indigo-900 px-3 py-1.5 rounded-lg border border-indigo-700 text-xs text-indigo-200 cursor-pointer select-none transition">
+      <!-- 管理員專屬：隱藏今日所有預約時段 -->
+      <label id="hide-day-toggle-wrapper" class="hidden items-center gap-1.5 bg-rose-900/80 hover:bg-rose-900 px-2.5 py-1.5 rounded-lg border border-rose-700 text-xs text-rose-100 cursor-pointer select-none transition">
+        <input type="checkbox" id="hide-day-checkbox" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500 accent-rose-600 cursor-pointer">
+        <span class="font-bold text-rose-200"><i class="fa-solid fa-eye-slash mr-1"></i>隱藏當日所有預約時段</span>
+      </label>
+
+      <label id="night-toggle-wrapper" class="hidden items-center gap-1.5 bg-indigo-900/80 hover:bg-indigo-900 px-2.5 py-1.5 rounded-lg border border-indigo-700 text-xs text-indigo-200 cursor-pointer select-none transition">
         <input type="checkbox" id="night-only-checkbox" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 accent-emerald-600 cursor-pointer">
-        <span class="font-bold text-amber-300">🌙 當日僅顯示晚上 (18:00-21:00)</span>
+        <span class="font-bold text-amber-300">🌙 僅顯示晚上 (18:00-21:00)</span>
       </label>
 
       <button id="manage-coaches-btn" class="hidden bg-indigo-700 hover:bg-indigo-600 text-white font-medium px-2.5 py-1.5 rounded-lg text-xs transition shadow border border-indigo-500 flex items-center gap-1">
@@ -150,6 +156,7 @@
       <div class="hidden md:flex items-center gap-3 text-[11px] font-medium text-indigo-200 border-l border-indigo-800/80 pl-3">
         <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-emerald-100 border border-emerald-400 inline-block shadow-sm"></span> 個練預約</span>
         <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-amber-100 border border-amber-400 inline-block shadow-sm"></span> 社團包場</span>
+        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-purple-100 border border-purple-400 inline-block shadow-sm"></span> 其他用途</span>
         <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-white border border-slate-300 inline-block shadow-sm"></span> 空白可選</span>
       </div>
     </div>
@@ -195,12 +202,14 @@
 
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">預約類型</label>
-          <div class="grid grid-cols-2 gap-2">
-            <button type="button" id="type-personal-btn" class="py-1.5 px-3 border border-emerald-600 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-medium text-center transition">學員個人練習</button>
-            <button type="button" id="type-club-btn" class="py-1.5 px-3 border border-slate-300 bg-white text-slate-600 rounded-lg text-xs font-medium text-center transition hover:bg-slate-50">社團包場</button>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button type="button" id="type-personal-btn" class="py-1.5 px-2 border border-emerald-600 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-medium text-center transition">個人練習</button>
+            <button type="button" id="type-club-btn" class="py-1.5 px-2 border border-slate-300 bg-white text-slate-600 rounded-lg text-xs font-medium text-center transition hover:bg-slate-50">社團包場</button>
+            <button type="button" id="type-other-btn" class="py-1.5 px-2 border border-slate-300 bg-white text-slate-600 rounded-lg text-xs font-medium text-center transition hover:bg-slate-50">其他用途</button>
           </div>
         </div>
 
+        <!-- 1. 個人練習欄位 -->
         <div id="personal-fields" class="space-y-3">
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">
@@ -208,6 +217,24 @@
               <span class="text-[10px] text-amber-700 font-normal ml-1">(1對2合練請用斜線分隔，如：以家/非非)</span>
             </label>
             <input type="text" id="input-student" placeholder="例如：以家/非非 或 峻誠" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500">
+          </div>
+
+          <!-- 管理員專屬：學員年級欄位 -->
+          <div id="grade-field-container" class="hidden">
+            <label class="block text-xs font-semibold text-slate-700 mb-1">
+              學員年級 <span class="text-[10px] text-indigo-600 font-bold">(🔒 僅管理員可見與設定)</span>
+            </label>
+            <select id="input-grade" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium">
+              <option value="">-- 請選擇年級 --</option>
+              <option value="幼兒園">幼兒園</option>
+              <option value="一年級">一年級 (小一)</option>
+              <option value="二年級">二年級 (小二)</option>
+              <option value="三年級">三年級 (小三)</option>
+              <option value="四年級">四年級 (小四)</option>
+              <option value="五年級">五年級 (小五)</option>
+              <option value="六年級">六年級 (小六)</option>
+              <option value="國中">國中</option>
+            </select>
           </div>
 
           <div>
@@ -226,8 +253,18 @@
           </div>
         </div>
 
+        <!-- 2. 社團包場欄位 -->
         <div id="club-fields" class="hidden">
-          <p class="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-md border border-amber-200">選取時段將標記為「社團」，適用於團體活動或社團包場。</p>
+          <p class="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-md border border-amber-200">選取時段將標記為「社團包場」，適用於團體活動或社團包場。</p>
+        </div>
+
+        <!-- 3. 其他用途欄位 -->
+        <div id="other-fields" class="hidden space-y-3">
+          <p class="text-xs text-purple-700 bg-purple-50 p-2.5 rounded-md border border-purple-200">選取時段將標記為「其他用途」，預約後將以紫色呈顯。</p>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">用途備註 / 活動名稱 <span class="text-rose-500">*</span></label>
+            <input type="text" id="input-other-note" placeholder="例如：比賽場地佈置、保養清潔、裁判講習..." class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500">
+          </div>
         </div>
       </div>
 
@@ -447,7 +484,7 @@
       if (unsubscribe) unsubscribe(); 
 
       if (!bookings[currentDate]) {
-        bookings[currentDate] = { eventTitle: '', nightOnly: false, slots: {} };
+        bookings[currentDate] = { eventTitle: '', nightOnly: false, hideAllSlots: false, slots: {} };
       }
 
       const docRef = window.fsDoc(window.db, "bookings", currentDate);
@@ -459,20 +496,22 @@
             bookings[currentDate] = {
               eventTitle: '期中考要認真喔',
               nightOnly: false,
+              hideAllSlots: false,
               slots: {
-                '0_11': { student: '以家/非非', coach: '彭教練', timeNote: '18:20-19:20', type: 'personal' },
-                '0_12': { student: '峻誠', coach: '彭教練', timeNote: '', type: 'personal' },
-                '1_11': { student: '展誠', coach: '彭教練', timeNote: '', type: 'personal' },
-                '2_12': { student: '宇澄', coach: '盧教練', timeNote: '19:00-20:00', type: 'personal' }
+                '0_11': { student: '以家/非非', coach: '彭教練', timeNote: '18:20-19:20', type: 'personal', grade: '三年級' },
+                '0_12': { student: '峻誠', coach: '彭教練', timeNote: '', type: 'personal', grade: '四年級' },
+                '1_11': { student: '展誠', coach: '彭教練', timeNote: '', type: 'personal', grade: '二年級' },
+                '2_12': { student: '宇澄', coach: '盧教練', timeNote: '19:00-20:00', type: 'personal', grade: '一年級' }
               }
             };
             saveData();
           } else {
-            bookings[currentDate] = { eventTitle: '', nightOnly: false, slots: {} };
+            bookings[currentDate] = { eventTitle: '', nightOnly: false, hideAllSlots: false, slots: {} };
           }
         }
         
         nightOnlyCheckbox.checked = !!bookings[currentDate].nightOnly;
+        hideDayCheckbox.checked = !!bookings[currentDate].hideAllSlots;
         renderGrid();
         updateEventBannerDisplay();
       }, (error) => {
@@ -485,7 +524,7 @@
     function saveData() {
       if (window.db) {
         const docRef = window.fsDoc(window.db, "bookings", currentDate);
-        window.fsSetDoc(docRef, bookings[currentDate] || { eventTitle: '', nightOnly: false, slots: {} }).catch(err => console.error(err));
+        window.fsSetDoc(docRef, bookings[currentDate] || { eventTitle: '', nightOnly: false, hideAllSlots: false, slots: {} }).catch(err => console.error(err));
       }
       localStorage.setItem('badminton_excel_bookings', JSON.stringify(bookings));
     }
@@ -496,9 +535,10 @@
         try { bookings = JSON.parse(saved); } catch(e) { bookings = {}; }
       }
       if (!bookings[currentDate]) {
-        bookings[currentDate] = { eventTitle: '', nightOnly: false, slots: {} };
+        bookings[currentDate] = { eventTitle: '', nightOnly: false, hideAllSlots: false, slots: {} };
       }
       nightOnlyCheckbox.checked = !!bookings[currentDate].nightOnly;
+      hideDayCheckbox.checked = !!bookings[currentDate].hideAllSlots;
     }
 
     // DOM Elements
@@ -516,6 +556,8 @@
     const openStatsBtn = document.getElementById('open-stats-btn');
     const nightOnlyCheckbox = document.getElementById('night-only-checkbox');
     const nightToggleWrapper = document.getElementById('night-toggle-wrapper');
+    const hideDayCheckbox = document.getElementById('hide-day-checkbox');
+    const hideDayToggleWrapper = document.getElementById('hide-day-toggle-wrapper');
     const manageCoachesBtn = document.getElementById('manage-coaches-btn');
     const gridTable = document.getElementById('grid-table');
     const mainContainer = document.getElementById('main-container');
@@ -572,13 +614,21 @@
     const cancelModalAction = document.getElementById('cancel-modal-action');
     const saveBookingBtn = document.getElementById('save-booking-btn');
     const deleteBookingBtn = document.getElementById('delete-booking-btn');
+    
     const typePersonalBtn = document.getElementById('type-personal-btn');
     const typeClubBtn = document.getElementById('type-club-btn');
+    const typeOtherBtn = document.getElementById('type-other-btn');
+    
     const personalFields = document.getElementById('personal-fields');
     const clubFields = document.getElementById('club-fields');
+    const otherFields = document.getElementById('other-fields');
+    
     const inputStudent = document.getElementById('input-student');
+    const inputGrade = document.getElementById('input-grade');
+    const gradeFieldContainer = document.getElementById('grade-field-container');
     const selectCoach = document.getElementById('select-coach');
     const inputTimeNote = document.getElementById('input-time-note');
+    const inputOtherNote = document.getElementById('input-other-note');
     const modalSlotsSummary = document.getElementById('modal-slots-summary');
 
     function updateAdminUIState() {
@@ -586,16 +636,21 @@
         clearDayBtn.classList.remove('hidden');
         nightToggleWrapper.classList.remove('hidden');
         nightToggleWrapper.classList.add('flex');
+        hideDayToggleWrapper.classList.remove('hidden');
+        hideDayToggleWrapper.classList.add('flex');
         manageCoachesBtn.classList.remove('hidden');
         openStatsBtn.classList.remove('hidden');
+        gradeFieldContainer.classList.remove('hidden');
         adminLockIcon.className = 'fa-solid fa-lock-open';
         adminBtnText.innerText = '管理員登出';
         adminLoginBtn.className = 'bg-rose-600 hover:bg-rose-500 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1 shrink-0';
       } else {
         clearDayBtn.classList.add('hidden');
         nightToggleWrapper.classList.add('hidden');
+        hideDayToggleWrapper.classList.add('hidden');
         manageCoachesBtn.classList.add('hidden');
         openStatsBtn.classList.add('hidden');
+        gradeFieldContainer.classList.add('hidden');
         adminLockIcon.className = 'fa-solid fa-lock';
         adminBtnText.innerText = '管理員登入';
         adminLoginBtn.className = 'bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1 shrink-0';
@@ -637,7 +692,7 @@
     dayEventTitleInput.addEventListener('blur', () => {
       if (!isAdminLoggedIn) return;
       if (!bookings[currentDate]) {
-        bookings[currentDate] = { eventTitle: '', nightOnly: false, slots: {} };
+        bookings[currentDate] = { eventTitle: '', nightOnly: false, hideAllSlots: false, slots: {} };
       }
       bookings[currentDate].eventTitle = dayEventTitleInput.value;
       saveData();
@@ -648,6 +703,16 @@
       if (e.key === 'Enter') {
         dayEventTitleInput.blur();
       }
+    });
+
+    hideDayCheckbox.addEventListener('change', (e) => {
+      if (!isAdminLoggedIn) return;
+      if (!bookings[currentDate]) {
+        bookings[currentDate] = { eventTitle: '', nightOnly: false, hideAllSlots: false, slots: {} };
+      }
+      bookings[currentDate].hideAllSlots = e.target.checked;
+      saveData();
+      renderGrid();
     });
 
     openStatsBtn.addEventListener('click', async () => {
@@ -778,7 +843,7 @@
             if (docSnap.exists()) {
               bookings[dStr] = docSnap.data();
             } else {
-              bookings[dStr] = { eventTitle: '', nightOnly: false, slots: {} };
+              bookings[dStr] = { eventTitle: '', nightOnly: false, hideAllSlots: false, slots: {} };
             }
           } catch (e) {
             console.error(`讀取日期 ${dStr} 資料失敗:`, e);
@@ -788,7 +853,18 @@
       await Promise.all(fetchPromises);
     }
 
-    let currentCalculatedMatchedSlots = [];
+    function getGradeRank(gradeStr) {
+      if (!gradeStr) return 99;
+      if (gradeStr.includes('幼') || gradeStr.includes('幼兒園')) return 0;
+      if (gradeStr.includes('一') || gradeStr.includes('1') || gradeStr.includes('小一')) return 1;
+      if (gradeStr.includes('二') || gradeStr.includes('2') || gradeStr.includes('小二')) return 2;
+      if (gradeStr.includes('三') || gradeStr.includes('3') || gradeStr.includes('小三')) return 3;
+      if (gradeStr.includes('四') || gradeStr.includes('4') || gradeStr.includes('小四')) return 4;
+      if (gradeStr.includes('五') || gradeStr.includes('5') || gradeStr.includes('小五')) return 5;
+      if (gradeStr.includes('六') || gradeStr.includes('6') || gradeStr.includes('小六')) return 6;
+      if (gradeStr.includes('國') || gradeStr.includes('中')) return 7;
+      return 50;
+    }
 
     async function renderStatsData() {
       const type = statsTypeSelect.value;
@@ -805,7 +881,6 @@
         displayRate1on1.innerText = '600';
         displayRate1on2.innerText = '400';
         statsTableBody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">目前無資料</td></tr>';
-        currentCalculatedMatchedSlots = [];
         return;
       }
 
@@ -847,6 +922,7 @@
             const hasSlash = rawStudentStr.includes('/');
             const studentList = hasSlash ? rawStudentStr.split('/').map(n => n.trim()).filter(n => n !== '') : [rawStudentStr.trim()];
             const noteStr = slot.timeNote || '';
+            const gradeStr = slot.grade || '';
             
             const is1on2 = hasSlash;
             const coachObj = getCoachObj(slot.coach);
@@ -873,6 +949,7 @@
                   typeLabel: slotTypeLabel,
                   unitRate: unitRate,
                   is1on2: is1on2,
+                  grade: gradeStr,
                   timeNote: noteStr || '-'
                 });
               }
@@ -882,7 +959,6 @@
       });
 
       matchedSlots.sort((a, b) => a.date.localeCompare(b.date));
-      currentCalculatedMatchedSlots = matchedSlots;
 
       if (type === 'coach') {
         const activeCoachObj = getCoachObj(target);
@@ -907,14 +983,14 @@
             <td class="p-2 border-r font-mono">${item.date}</td>
             <td class="p-2 border-r font-bold">${item.court}</td>
             <td class="p-2 border-r font-mono">${item.time}</td>
-            <td class="p-2 border-r font-bold text-emerald-900">${item.student}</td>
+            <td class="p-2 border-r font-bold text-emerald-900">${item.student} ${item.grade ? `<span class="text-[10px] text-indigo-600 font-normal">(${item.grade})</span>` : ''}</td>
             <td class="p-2 border-r text-indigo-900">${item.coach}</td>
             <td class="p-2 border-r font-medium">
               <span class="px-1.5 py-0.5 rounded text-[11px] ${item.is1on2 ? 'bg-indigo-100 text-indigo-800' : 'bg-emerald-100 text-emerald-800'}">
                 ${item.typeLabel} ($${item.unitRate})
               </span>
             </td>
-            <td class="p-2 text-slate-500 font-mono">${item.rawStudent !== item.student ? `[原標記: ${item.rawStudent}] ` : ''}${item.timeNote}</td>
+            <td class="p-2 text-slate-500 font-mono">${item.timeNote}</td>
           `;
           statsTableBody.appendChild(tr);
         });
@@ -960,6 +1036,7 @@
             const coachName = slot.coach || '無';
             const coachObj = getCoachObj(coachName);
             const unitRate = is1on2 ? coachObj.rate2 : coachObj.rate1;
+            const gradeStr = slot.grade || '';
 
             studentList.forEach(singleStudent => {
               const isMatch = (type === 'coach' && coachName === target) || (type === 'student' && singleStudent === target);
@@ -968,7 +1045,6 @@
                 const dObj = new Date(dStr);
                 const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
                 const monthDayStr = `${dObj.getMonth()+1}/${dObj.getDate()}(${weekDays[dObj.getDay()]})`;
-                
                 const timeDisplay = (slot.timeNote && slot.timeNote.trim() !== '') ? slot.timeNote.trim() : ALL_TIME_SLOTS[tIdx].replace(/\s~\s/g, '-');
                 const otherStudents = studentList.filter(n => n !== singleStudent);
                 const partnerNote = (is1on2 && otherStudents.length > 0) ? ` (with ${otherStudents.join('/')})` : '';
@@ -978,6 +1054,7 @@
                   date: dStr,
                   student: singleStudent,
                   coach: coachName,
+                  grade: gradeStr,
                   formattedTime: formattedTime,
                   is1on2: is1on2,
                   unitRate: unitRate
@@ -1002,11 +1079,15 @@
           groupMap[mapKey] = {
             student: item.student,
             coach: item.coach,
+            grade: item.grade,
             times: [],
             hr1on1: 0,
             hr1on2: 0,
             totalFee: 0
           };
+        }
+        if (item.grade && !groupMap[mapKey].grade) {
+          groupMap[mapKey].grade = item.grade;
         }
         groupMap[mapKey].times.push(item.formattedTime);
         if (item.is1on2) {
@@ -1017,10 +1098,17 @@
         groupMap[mapKey].totalFee += item.unitRate;
       });
 
+      const sortedGroups = Object.values(groupMap).sort((a, b) => {
+        const rankA = getGradeRank(a.grade);
+        const rankB = getGradeRank(b.grade);
+        if (rankA !== rankB) return rankA - rankB;
+        return a.student.localeCompare(b.student, 'zh-Hant');
+      });
+
       let dateTitleStr = range === 'custom' ? `${statsStartDateInput.value} ~ ${statsEndDateInput.value}` : range === 'current' ? currentDate : '個人練習統計表';
 
       const excelRows = [
-        [null, '請教練或家長溝通好，自行登記個練訓練時間，並由雙方確認訓練時間、費用無誤後，於每月1日晚上21：00前停止登記前一個月的時數。'],
+        [null, '請教練或家長溝通好，自行登記個練訓練時間，並由雙方確認訓練時間, 費用無誤後，於每月1日晚上21：00前停止登記前一個月的時數。'],
         [null, '麻煩大家務必配合，再次感謝協助每個月協助場地紀錄表的前會長 信維爸爸、每月協助登記及帳務處理的姜宸媽媽、峻誠媽媽，辛苦了。'],
         [null, null],
         [null, null],
@@ -1028,7 +1116,7 @@
         [null, '姓名', '訓練時間', null, null, null, null, null, '一對一（hr）', '一對二（hr）', '費用', '教練']
       ];
 
-      Object.values(groupMap).forEach(sData => {
+      sortedGroups.forEach(sData => {
         let rowData = [null, sData.student];
         for (let i = 0; i < 6; i++) {
           rowData.push(sData.times[i] || null);
@@ -1042,8 +1130,8 @@
 
       const ws = XLSX.utils.aoa_to_sheet(excelRows);
       ws['!cols'] = [
-        { wch: 3 }, { wch: 10 }, { wch: 24 }, { wch: 24 }, { wch: 24 }, { wch: 24 },
-        { wch: 24 }, { wch: 24 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 }
+        { wch: 3 }, { wch: 12 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 22 },
+        { wch: 22 }, { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 }
       ];
 
       const wb = XLSX.utils.book_new();
@@ -1087,13 +1175,13 @@
             const coachName = slot.coach || '無';
             const coachObj = getCoachObj(coachName);
             const unitRate = is1on2 ? coachObj.rate2 : coachObj.rate1;
+            const gradeStr = slot.grade || '';
 
             studentList.forEach(singleStudent => {
               const [cIdx, tIdx] = sKey.split('_').map(Number);
               const dObj = new Date(dStr);
               const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
               const monthDayStr = `${dObj.getMonth()+1}/${dObj.getDate()}(${weekDays[dObj.getDay()]})`;
-              
               const timeDisplay = (slot.timeNote && slot.timeNote.trim() !== '') ? slot.timeNote.trim() : ALL_TIME_SLOTS[tIdx].replace(/\s~\s/g, '-');
               const otherStudents = studentList.filter(n => n !== singleStudent);
               const partnerNote = (is1on2 && otherStudents.length > 0) ? ` (with ${otherStudents.join('/')})` : '';
@@ -1103,6 +1191,7 @@
                 date: dStr,
                 student: singleStudent,
                 coach: coachName,
+                grade: gradeStr,
                 formattedTime: formattedTime,
                 is1on2: is1on2,
                 unitRate: unitRate
@@ -1126,11 +1215,15 @@
           groupMap[mapKey] = {
             student: item.student,
             coach: item.coach,
+            grade: item.grade,
             times: [],
             hr1on1: 0,
             hr1on2: 0,
             totalFee: 0
           };
+        }
+        if (item.grade && !groupMap[mapKey].grade) {
+          groupMap[mapKey].grade = item.grade;
         }
         groupMap[mapKey].times.push(item.formattedTime);
         if (item.is1on2) {
@@ -1139,6 +1232,13 @@
           groupMap[mapKey].hr1on1 += 1;
         }
         groupMap[mapKey].totalFee += item.unitRate;
+      });
+
+      const sortedGroups = Object.values(groupMap).sort((a, b) => {
+        const rankA = getGradeRank(a.grade);
+        const rankB = getGradeRank(b.grade);
+        if (rankA !== rankB) return rankA - rankB;
+        return a.student.localeCompare(b.student, 'zh-Hant');
       });
 
       let dateRangeLabel = range === 'custom' ? `${statsStartDateInput.value} ~ ${statsEndDateInput.value}` : range === 'current' ? `當日 (${currentDate})` : '全體學員個練總表';
@@ -1152,7 +1252,7 @@
         [null, '姓名', '訓練時間', null, null, null, null, null, '一對一（hr）', '一對二（hr）', '費用', '教練']
       ];
 
-      Object.values(groupMap).forEach(sData => {
+      sortedGroups.forEach(sData => {
         let rowData = [null, sData.student];
         for (let i = 0; i < 6; i++) {
           rowData.push(sData.times[i] || null);
@@ -1166,8 +1266,8 @@
 
       const ws = XLSX.utils.aoa_to_sheet(excelRows);
       ws['!cols'] = [
-        { wch: 3 }, { wch: 10 }, { wch: 24 }, { wch: 24 }, { wch: 24 }, { wch: 24 },
-        { wch: 24 }, { wch: 24 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 }
+        { wch: 3 }, { wch: 12 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 22 },
+        { wch: 22 }, { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 }
       ];
 
       const wb = XLSX.utils.book_new();
@@ -1350,7 +1450,7 @@
     nightOnlyCheckbox.addEventListener('change', (e) => {
       if (!isAdminLoggedIn) return;
       if (!bookings[currentDate]) {
-        bookings[currentDate] = { eventTitle: '', nightOnly: false, slots: {} };
+        bookings[currentDate] = { eventTitle: '', nightOnly: false, hideAllSlots: false, slots: {} };
       }
       bookings[currentDate].nightOnly = e.target.checked;
       saveData();
@@ -1412,10 +1512,26 @@
 
     function renderGrid() {
       gridTable.innerHTML = '';
-      const dayData = bookings[currentDate] || { eventTitle: '', nightOnly: false, slots: {} };
+      const dayData = bookings[currentDate] || { eventTitle: '', nightOnly: false, hideAllSlots: false, slots: {} };
       updateEventBannerDisplay();
       
       const isNightOnly = !!dayData.nightOnly;
+      const isHiddenForUser = !!dayData.hideAllSlots && !isAdminLoggedIn;
+
+      // 若非管理員且該日期設為隱藏
+      if (isHiddenForUser) {
+        gridTable.innerHTML = `
+          <div class="flex-1 flex flex-col items-center justify-center p-12 text-center bg-slate-50">
+            <div class="bg-rose-100 p-4 rounded-full text-rose-600 mb-3 text-2xl">
+              <i class="fa-solid fa-eye-slash"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-700 mb-1">今日時段暫不開放檢視與預約</h3>
+            <p class="text-xs text-slate-500">管理員已暫時隱藏此日期的預約時段，請切換其他日期或稍後再試。</p>
+          </div>
+        `;
+        return;
+      }
+
       const activeSlots = getActiveTimeSlots();
 
       if (isMobileView) {
@@ -1444,6 +1560,13 @@
               if (booking.type === 'club') {
                 slotBg = 'bg-amber-50 hover:bg-amber-100/80';
                 statusText = `<span class="text-xs font-bold text-amber-800"><i class="fa-solid fa-users mr-1"></i>社團包場</span>`;
+              } else if (booking.type === 'other') {
+                slotBg = 'bg-purple-50 hover:bg-purple-100/80';
+                statusText = `
+                  <div class="text-right">
+                    <span class="text-xs font-bold text-purple-900"><i class="fa-solid fa-bookmark mr-1 text-purple-600"></i>${booking.otherNote || '其他用途'}</span>
+                  </div>
+                `;
               } else {
                 slotBg = 'bg-emerald-50 hover:bg-emerald-100/80';
                 const coachStr = booking.coach ? `<span class="text-emerald-800 font-normal ml-1">(${booking.coach})</span>` : '';
@@ -1504,7 +1627,12 @@
             if (booking) {
               if (booking.type === 'club') {
                 cellClass = 'bg-amber-100/90 hover:bg-amber-200/90 border-amber-300 text-amber-900 font-bold';
-                contentHtml = `<div class="text-[11px]">社團</div>`;
+                contentHtml = `<div class="text-[11px]">社團包場</div>`;
+              } else if (booking.type === 'other') {
+                cellClass = 'bg-purple-100/90 hover:bg-purple-200/90 border-purple-300 text-purple-900 font-bold';
+                contentHtml = `
+                  <div class="text-[11px] leading-tight truncate px-0.5">${booking.otherNote || '其他用途'}</div>
+                `;
               } else {
                 cellClass = 'bg-emerald-100/90 hover:bg-emerald-200/90 border-emerald-300 text-emerald-900';
                 const coachStr = booking.coach ? `<span class="text-xs block opacity-90 text-emerald-800 font-normal">(${booking.coach})</span>` : '';
@@ -1582,11 +1710,16 @@
       saveBookingBtn.classList.remove('hidden');
       document.getElementById('modal-title').innerText = '新增批次預約';
       inputStudent.value = '';
+      inputGrade.value = '';
+      inputOtherNote.value = '';
       inputStudent.removeAttribute('disabled');
+      inputGrade.removeAttribute('disabled');
       selectCoach.removeAttribute('disabled');
       inputTimeNote.removeAttribute('disabled');
+      inputOtherNote.removeAttribute('disabled');
       typePersonalBtn.removeAttribute('disabled');
       typeClubBtn.removeAttribute('disabled');
+      typeOtherBtn.removeAttribute('disabled');
       
       renderCoachSelect('');
       inputTimeNote.value = '';
@@ -1608,6 +1741,8 @@
       setBookingType(data.type || 'personal');
       
       inputStudent.value = data.student || '';
+      inputGrade.value = data.grade || '';
+      inputOtherNote.value = data.otherNote || '';
       renderCoachSelect(data.coach || '');
       inputTimeNote.value = data.timeNote || '';
 
@@ -1618,10 +1753,13 @@
         cancelModalAction.innerText = '取消';
         
         inputStudent.removeAttribute('disabled');
+        inputGrade.removeAttribute('disabled');
         selectCoach.removeAttribute('disabled');
         inputTimeNote.removeAttribute('disabled');
+        inputOtherNote.removeAttribute('disabled');
         typePersonalBtn.removeAttribute('disabled');
         typeClubBtn.removeAttribute('disabled');
+        typeOtherBtn.removeAttribute('disabled');
       } else {
         document.getElementById('modal-title').innerText = '預約詳情 (唯讀)';
         deleteBookingBtn.classList.add('hidden');
@@ -1629,10 +1767,13 @@
         cancelModalAction.innerText = '關閉';
 
         inputStudent.setAttribute('disabled', 'disabled');
+        inputGrade.setAttribute('disabled', 'disabled');
         selectCoach.setAttribute('disabled', 'disabled');
         inputTimeNote.setAttribute('disabled', 'disabled');
+        inputOtherNote.setAttribute('disabled', 'disabled');
         typePersonalBtn.setAttribute('disabled', 'disabled');
         typeClubBtn.setAttribute('disabled', 'disabled');
+        typeOtherBtn.setAttribute('disabled', 'disabled');
       }
 
       bookingModal.classList.remove('hidden');
@@ -1640,34 +1781,57 @@
 
     function setBookingType(type) {
       currentBookingType = type;
+
+      // 復原預設樣式
+      typePersonalBtn.className = 'py-1.5 px-2 border border-slate-300 bg-white text-slate-600 rounded-lg text-xs font-medium text-center transition hover:bg-slate-50';
+      typeClubBtn.className = 'py-1.5 px-2 border border-slate-300 bg-white text-slate-600 rounded-lg text-xs font-medium text-center transition hover:bg-slate-50';
+      typeOtherBtn.className = 'py-1.5 px-2 border border-slate-300 bg-white text-slate-600 rounded-lg text-xs font-medium text-center transition hover:bg-slate-50';
+
+      personalFields.classList.add('hidden');
+      clubFields.classList.add('hidden');
+      otherFields.classList.add('hidden');
+
       if (type === 'personal') {
-        typePersonalBtn.className = 'py-1.5 px-3 border border-emerald-600 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-medium text-center transition';
-        typeClubBtn.className = 'py-1.5 px-3 border border-slate-300 bg-white text-slate-600 rounded-lg text-xs font-medium text-center transition hover:bg-slate-50';
+        typePersonalBtn.className = 'py-1.5 px-2 border border-emerald-600 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-medium text-center transition';
         personalFields.classList.remove('hidden');
-        clubFields.classList.add('hidden');
-      } else {
-        typeClubBtn.className = 'py-1.5 px-3 border border-amber-600 bg-amber-50 text-amber-700 rounded-lg text-xs font-medium text-center transition';
-        typePersonalBtn.className = 'py-1.5 px-3 border border-slate-300 bg-white text-slate-600 rounded-lg text-xs font-medium text-center transition hover:bg-slate-50';
+      } else if (type === 'club') {
+        typeClubBtn.className = 'py-1.5 px-2 border border-amber-600 bg-amber-50 text-amber-700 rounded-lg text-xs font-medium text-center transition';
         clubFields.classList.remove('hidden');
-        personalFields.classList.add('hidden');
+      } else if (type === 'other') {
+        typeOtherBtn.className = 'py-1.5 px-2 border border-purple-600 bg-purple-50 text-purple-700 rounded-lg text-xs font-medium text-center transition';
+        otherFields.classList.remove('hidden');
       }
     }
 
     saveBookingBtn.addEventListener('click', () => {
       if (!isAdminLoggedIn) return;
       if (!bookings[currentDate]) {
-        bookings[currentDate] = { eventTitle: dayEventTitleInput.value, nightOnly: false, slots: {} };
+        bookings[currentDate] = { eventTitle: dayEventTitleInput.value, nightOnly: false, hideAllSlots: false, slots: {} };
       }
+
+      let studentVal = '';
+      if (currentBookingType === 'personal') studentVal = inputStudent.value.trim();
+      else if (currentBookingType === 'club') studentVal = '社團包場';
+      else if (currentBookingType === 'other') studentVal = inputOtherNote.value.trim() || '其他用途';
+
       const bookingPayload = {
         type: currentBookingType,
-        student: currentBookingType === 'personal' ? inputStudent.value.trim() : '社團',
+        student: studentVal,
+        grade: currentBookingType === 'personal' ? inputGrade.value.trim() : '',
         coach: currentBookingType === 'personal' ? selectCoach.value.trim() : '',
-        timeNote: currentBookingType === 'personal' ? inputTimeNote.value.trim() : ''
+        timeNote: currentBookingType === 'personal' ? inputTimeNote.value.trim() : '',
+        otherNote: currentBookingType === 'other' ? inputOtherNote.value.trim() : ''
       };
+
       if (currentBookingType === 'personal' && !bookingPayload.student) {
         alert('請填寫學員姓名！');
         return;
       }
+      if (currentBookingType === 'other' && !bookingPayload.otherNote) {
+        alert('請填寫其他用途備註！');
+        return;
+      }
+
       if (currentEditKey) {
         bookings[currentDate].slots[currentEditKey] = bookingPayload;
       } else {
@@ -1748,8 +1912,10 @@
     openBookingModalBtn.addEventListener('click', openBatchModal);
     closeModalBtn.addEventListener('click', () => bookingModal.classList.add('hidden'));
     cancelModalAction.addEventListener('click', () => bookingModal.classList.add('hidden'));
+    
     typePersonalBtn.addEventListener('click', () => { if (isAdminLoggedIn) setBookingType('personal'); });
     typeClubBtn.addEventListener('click', () => { if (isAdminLoggedIn) setBookingType('club'); });
+    typeOtherBtn.addEventListener('click', () => { if (isAdminLoggedIn) setBookingType('other'); });
 
     window.addEventListener('firebase-init', () => { renderAll(); });
     setTimeout(() => {

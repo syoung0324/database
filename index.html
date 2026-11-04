@@ -968,9 +968,11 @@
                 const dObj = new Date(dStr);
                 const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
                 const monthDayStr = `${dObj.getMonth()+1}/${dObj.getDate()}(${weekDays[dObj.getDay()]})`;
-                const timeStr = ALL_TIME_SLOTS[tIdx].replace(/\s~\s/g, '-');
-                const timeNotePart = slot.timeNote ? ` ${slot.timeNote}` : '';
-                const formattedTime = `${monthDayStr} ${timeStr}${timeNotePart}`;
+                
+                const timeDisplay = (slot.timeNote && slot.timeNote.trim() !== '') ? slot.timeNote.trim() : ALL_TIME_SLOTS[tIdx].replace(/\s~\s/g, '-');
+                const otherStudents = studentList.filter(n => n !== singleStudent);
+                const partnerNote = (is1on2 && otherStudents.length > 0) ? ` (with ${otherStudents.join('/')})` : '';
+                const formattedTime = `${monthDayStr} ${timeDisplay}${partnerNote}`;
 
                 allSlots.push({
                   date: dStr,
@@ -1040,8 +1042,8 @@
 
       const ws = XLSX.utils.aoa_to_sheet(excelRows);
       ws['!cols'] = [
-        { wch: 3 }, { wch: 10 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 22 },
-        { wch: 22 }, { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 }
+        { wch: 3 }, { wch: 10 }, { wch: 24 }, { wch: 24 }, { wch: 24 }, { wch: 24 },
+        { wch: 24 }, { wch: 24 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 }
       ];
 
       const wb = XLSX.utils.book_new();
@@ -1091,9 +1093,11 @@
               const dObj = new Date(dStr);
               const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
               const monthDayStr = `${dObj.getMonth()+1}/${dObj.getDate()}(${weekDays[dObj.getDay()]})`;
-              const timeStr = ALL_TIME_SLOTS[tIdx].replace(/\s~\s/g, '-');
-              const timeNotePart = slot.timeNote ? ` ${slot.timeNote}` : '';
-              const formattedTime = `${monthDayStr} ${timeStr}${timeNotePart}`;
+              
+              const timeDisplay = (slot.timeNote && slot.timeNote.trim() !== '') ? slot.timeNote.trim() : ALL_TIME_SLOTS[tIdx].replace(/\s~\s/g, '-');
+              const otherStudents = studentList.filter(n => n !== singleStudent);
+              const partnerNote = (is1on2 && otherStudents.length > 0) ? ` (with ${otherStudents.join('/')})` : '';
+              const formattedTime = `${monthDayStr} ${timeDisplay}${partnerNote}`;
 
               allSlots.push({
                 date: dStr,
@@ -1162,8 +1166,8 @@
 
       const ws = XLSX.utils.aoa_to_sheet(excelRows);
       ws['!cols'] = [
-        { wch: 3 }, { wch: 10 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 22 },
-        { wch: 22 }, { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 }
+        { wch: 3 }, { wch: 10 }, { wch: 24 }, { wch: 24 }, { wch: 24 }, { wch: 24 },
+        { wch: 24 }, { wch: 24 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 }
       ];
 
       const wb = XLSX.utils.book_new();

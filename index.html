@@ -134,6 +134,11 @@
     </div>
 
     <div class="flex items-center gap-2 shrink-0 flex-wrap">
+      <!-- 管理員專屬：快速文字預約 -->
+      <button id="open-quick-parse-btn" class="hidden bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold px-2.5 py-1.5 rounded-lg text-xs transition shadow border border-fuchsia-400 flex items-center gap-1">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> 快速文字預約
+      </button>
+
       <button id="open-stats-btn" class="hidden bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-2.5 py-1.5 rounded-lg text-xs transition shadow border border-amber-400 flex items-center gap-1">
         <i class="fa-solid fa-chart-pie"></i> 統計報表
       </button>
@@ -148,6 +153,11 @@
         <input type="checkbox" id="night-only-checkbox" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 accent-emerald-600 cursor-pointer">
         <span class="font-bold text-amber-300">🌙 僅顯示晚上 (18:00-21:00)</span>
       </label>
+
+      <!-- 管理員專屬：學員年級總表 -->
+      <button id="manage-students-btn" class="hidden bg-teal-700 hover:bg-teal-600 text-white font-medium px-2.5 py-1.5 rounded-lg text-xs transition shadow border border-teal-500 flex items-center gap-1">
+        <i class="fa-solid fa-graduation-cap"></i> 學員年級總表
+      </button>
 
       <button id="manage-coaches-btn" class="hidden bg-indigo-700 hover:bg-indigo-600 text-white font-medium px-2.5 py-1.5 rounded-lg text-xs transition shadow border border-indigo-500 flex items-center gap-1">
         <i class="fa-solid fa-user-gear"></i> 教練管理
@@ -217,24 +227,11 @@
               <span class="text-[10px] text-amber-700 font-normal ml-1">(1對2合練請用斜線分隔，如：以家/非非)</span>
             </label>
             <input type="text" id="input-student" placeholder="例如：以家/非非 或 峻誠" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500">
-          </div>
-
-          <!-- 管理員專屬：學員年級欄位 -->
-          <div id="grade-field-container" class="hidden">
-            <label class="block text-xs font-semibold text-slate-700 mb-1">
-              學員年級 <span class="text-[10px] text-indigo-600 font-bold">(🔒 僅管理員可見與設定)</span>
-            </label>
-            <select id="input-grade" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium">
-              <option value="">-- 請選擇年級 --</option>
-              <option value="幼兒園">幼兒園</option>
-              <option value="一年級">一年級 (小一)</option>
-              <option value="二年級">二年級 (小二)</option>
-              <option value="三年級">三年級 (小三)</option>
-              <option value="四年級">四年級 (小四)</option>
-              <option value="五年級">五年級 (小五)</option>
-              <option value="六年級">六年級 (小六)</option>
-              <option value="國中">國中</option>
-            </select>
+            <!-- 自動帶入年級提示（僅管理員可見） -->
+            <div id="auto-grade-preview" class="hidden mt-1.5 text-[11px] px-2 py-1 rounded bg-teal-50 border border-teal-200 text-teal-800 flex items-center justify-between">
+              <span id="auto-grade-preview-text"></span>
+              <button type="button" id="quick-open-grade-master-btn" class="text-[10px] underline font-bold text-teal-700 hover:text-teal-900 ml-2 shrink-0">設定總表</button>
+            </div>
           </div>
 
           <div>
@@ -275,6 +272,118 @@
         <div class="flex gap-2 ml-auto">
           <button id="cancel-modal-action" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100">關閉</button>
           <button id="save-booking-btn" class="px-4 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-medium shadow transition">確認儲存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 管理者專屬：學員年級總表 Modal -->
+  <div id="student-grade-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="p-4 bg-teal-800 text-white flex items-center justify-between shrink-0">
+        <h3 class="font-bold text-sm text-white flex items-center gap-1.5">
+          <i class="fa-solid fa-graduation-cap"></i>
+          <span>學員年級總表管理 (自動帶入預約與報表)</span>
+        </h3>
+        <button id="close-student-grade-modal-btn" class="text-teal-200 hover:text-white">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <div class="p-4 space-y-3 flex-1 overflow-y-auto">
+        <div class="bg-teal-50 border border-teal-200 rounded-lg p-2.5 text-[11px] text-teal-900 flex flex-wrap items-center justify-between gap-2">
+          <span>設定好學員年級後，每次預約（含快速文字預約）與匯出報表將自動帶入年級。</span>
+          <button type="button" id="import-students-from-bookings-btn" class="bg-teal-700 hover:bg-teal-600 text-white font-bold px-2.5 py-1 rounded text-[11px] transition shadow-sm shrink-0">
+            <i class="fa-solid fa-file-import mr-1"></i>從現有預約匯入學員
+          </button>
+        </div>
+
+        <!-- 搜尋與篩選列 -->
+        <div class="flex gap-2">
+          <input type="text" id="student-grade-search" placeholder="搜尋學員姓名..." class="flex-1 text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500">
+          <select id="student-grade-filter" class="text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500 font-medium">
+            <option value="ALL">全部年級</option>
+            <option value="UNSET">尚未設定年級</option>
+            <option value="幼兒園">幼兒園</option>
+            <option value="一年級">一年級</option>
+            <option value="二年級">二年級</option>
+            <option value="三年級">三年級</option>
+            <option value="四年級">四年級</option>
+            <option value="五年級">五年級</option>
+            <option value="六年級">六年級</option>
+            <option value="國中">國中</option>
+          </select>
+        </div>
+
+        <div class="space-y-2" id="student-grade-list">
+          <!-- JS 動態寫入 -->
+        </div>
+      </div>
+
+      <!-- 底部新增學員列 -->
+      <div class="p-3 bg-slate-50 border-t flex gap-2 items-center shrink-0">
+        <input type="text" id="new-student-grade-name" placeholder="輸入學員姓名..." class="flex-1 text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500">
+        <select id="new-student-grade-select" class="text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500 font-medium">
+          <option value="幼兒園">幼兒園</option>
+          <option value="一年級">一年級 (小一)</option>
+          <option value="二年級">二年級 (小二)</option>
+          <option value="三年級" selected>三年級 (小三)</option>
+          <option value="四年級">四年級 (小四)</option>
+          <option value="五年級">五年級 (小五)</option>
+          <option value="六年級">六年級 (小六)</option>
+          <option value="國中">國中</option>
+        </select>
+        <button id="add-student-grade-btn" class="px-3.5 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded-md text-xs font-bold transition shadow shrink-0">
+          新增至總表
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 管理者專屬：快速文字預約 Modal -->
+  <div id="quick-parse-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="p-4 bg-fuchsia-800 text-white flex items-center justify-between shrink-0">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span>管理者特殊欄位：快速文字自動預約 / 取消</span>
+        </h3>
+        <button id="close-quick-parse-btn" class="text-fuchsia-200 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-4 space-y-3 flex-1 overflow-y-auto">
+        <div class="bg-fuchsia-50 border border-fuchsia-200 rounded-lg p-3 text-xs text-fuchsia-950 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-fuchsia-800"><i class="fa-solid fa-circle-info mr-1"></i>輸入格式說明（支援一次貼上多筆）：</span>
+            <button type="button" id="fill-quick-example-btn" class="text-[11px] bg-fuchsia-200 hover:bg-fuchsia-300 text-fuchsia-900 font-bold px-2 py-0.5 rounded transition">
+              填入範例文字
+            </button>
+          </div>
+          <pre class="bg-white/90 p-2 rounded border border-fuchsia-200 font-mono text-xs text-slate-700 leading-relaxed select-all">冬孜(張教練)
+11/14(六) 14:00-15:00(新增)</pre>
+          <ul class="text-[11px] text-slate-600 list-disc pl-4 space-y-0.5">
+            <li>第一行填寫 <b>選手姓名(教練名)</b>，支援 1對2 合練如 <code>以家/非非(彭教練)</code>，年級將自動由總表帶入。</li>
+            <li>第二行（可多行）填寫 <b>日期(星期) 時間(新增 或 取消)</b>，系統將自動尋找空場地完成預約或取消對應預約。</li>
+          </ul>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">請貼上預約文字內容：</label>
+          <textarea id="quick-parse-textarea" rows="6" placeholder="冬孜(張教練)&#10;11/14(六) 14:00-15:00(新增)" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fuchsia-500 font-mono leading-relaxed"></textarea>
+        </div>
+
+        <div id="quick-parse-result" class="hidden space-y-1.5 text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-200 max-h-40 overflow-y-auto"></div>
+      </div>
+
+      <div class="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 shrink-0">
+        <button type="button" id="clear-quick-parse-btn" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100">清空內容</button>
+        <div class="flex gap-2">
+          <button type="button" id="cancel-quick-parse-btn" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100">關閉</button>
+          <button type="button" id="submit-quick-parse-btn" class="px-4 py-1.5 bg-fuchsia-700 hover:bg-fuchsia-600 text-white rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5">
+            <i class="fa-solid fa-bolt"></i> 執行自動預約 / 取消
+          </button>
         </div>
       </div>
     </div>
@@ -338,8 +447,8 @@
       <div class="p-4 space-y-4 flex-1 overflow-y-auto">
         <!-- 控制與費率提示區域 -->
         <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-3">
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <div class="sm:col-span-3">
               <label class="block text-xs font-bold text-slate-700 mb-1">統計視角</label>
               <select id="stats-type-select" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
                 <option value="coach">依指導教練</option>
@@ -347,20 +456,32 @@
               </select>
             </div>
 
-            <div>
+            <div class="sm:col-span-3">
               <label class="block text-xs font-bold text-slate-700 mb-1">對象名稱</label>
               <select id="stats-target-select" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
                 <!-- 動態產出 -->
               </select>
             </div>
 
-            <div>
+            <div class="sm:col-span-6">
               <label class="block text-xs font-bold text-slate-700 mb-1">時間範圍</label>
-              <select id="stats-range-select" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
-                <option value="all">跨日總計 (全部紀錄)</option>
-                <option value="current">僅當日統計</option>
-                <option value="custom">自訂日期區間</option>
-              </select>
+              <div class="flex flex-wrap sm:flex-nowrap items-center gap-1.5">
+                <select id="stats-range-select" class="flex-1 min-w-[120px] text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
+                  <option value="current" selected>僅當日統計</option>
+                  <option value="custom">自訂日期區間</option>
+                </select>
+
+                <!-- 僅當日統計專用日期切換器 -->
+                <div id="single-date-switcher" class="flex items-center bg-white border border-slate-300 rounded-md p-0.5 shrink-0">
+                  <button type="button" id="stats-prev-day-btn" class="px-2 py-1 rounded hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition" title="前一天">
+                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                  </button>
+                  <input type="date" id="stats-single-date" class="text-xs px-1 py-0.5 bg-transparent text-slate-800 font-medium focus:outline-none cursor-pointer">
+                  <button type="button" id="stats-next-day-btn" class="px-2 py-1 rounded hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition" title="後一天">
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -445,6 +566,7 @@
       '15:00 ~ 16:00', '16:00 ~ 17:00', '17:00 ~ 18:00', '18:00 ~ 19:00',
       '19:00 ~ 20:00', '20:00 ~ 21:00'
     ];
+    const GRADE_OPTIONS = ['幼兒園', '一年級', '二年級', '三年級', '四年級', '五年級', '六年級', '國中'];
 
     let currentDate = new Date().toISOString().split('T')[0];
     let selectedCells = new Set(); 
@@ -455,6 +577,7 @@
     let isAdminLoggedIn = false;
     let unsubscribe = null; 
     let coachUnsubscribe = null;
+    let studentGradeUnsubscribe = null;
 
     let coachList = JSON.parse(localStorage.getItem('badminton_coach_list_v2')) || [
       { name: '彭教練', rate1: 600, rate2: 400 },
@@ -469,12 +592,48 @@
       localStorage.setItem('badminton_coach_list_v2', JSON.stringify(coachList));
     }
 
+    // 學員年級總表 { "冬孜": "二年級", "以家": "三年級", ... }
+    let studentGradeMap = JSON.parse(localStorage.getItem('badminton_student_grades_v1')) || {
+      '以家': '三年級',
+      '峻誠': '四年級',
+      '展誠': '二年級',
+      '宇澄': '一年級'
+    };
+
     function saveCoachData() {
       localStorage.setItem('badminton_coach_list_v2', JSON.stringify(coachList));
       if (window.db) {
         const coachDocRef = window.fsDoc(window.db, "settings", "coaches");
         window.fsSetDoc(coachDocRef, { list: coachList }).catch(err => console.error("教練資料儲存失敗:", err));
       }
+    }
+
+    function saveStudentGradeData() {
+      localStorage.setItem('badminton_student_grades_v1', JSON.stringify(studentGradeMap));
+      if (window.db) {
+        const gradeDocRef = window.fsDoc(window.db, "settings", "studentGrades");
+        window.fsSetDoc(gradeDocRef, { map: studentGradeMap }).catch(err => console.error("學員年級總表儲存失敗:", err));
+      }
+    }
+
+    function getSingleStudentGrade(studentName, fallbackGrade = '') {
+      const cleanName = (studentName || '').trim();
+      if (!cleanName) return '';
+      if (Object.prototype.hasOwnProperty.call(studentGradeMap, cleanName)) {
+        return studentGradeMap[cleanName] || '';
+      }
+      return fallbackGrade || '';
+    }
+
+    function getBookingGradeFromMaster(studentStr, fallbackGrade = '') {
+      const raw = (studentStr || '').trim();
+      if (!raw) return '';
+      if (raw.includes('/')) {
+        const names = raw.split('/').map(n => n.trim()).filter(n => n !== '');
+        const grades = names.map(n => getSingleStudentGrade(n, '')).filter(g => g !== '');
+        return grades.length > 0 ? grades.join('/') : (fallbackGrade || '');
+      }
+      return getSingleStudentGrade(raw, fallbackGrade);
     }
 
     function setupCoachFirestoreListener() {
@@ -498,6 +657,27 @@
       });
     }
 
+    function setupStudentGradeFirestoreListener() {
+      if (!window.db) return;
+      if (studentGradeUnsubscribe) studentGradeUnsubscribe();
+
+      const gradeDocRef = window.fsDoc(window.db, "settings", "studentGrades");
+      studentGradeUnsubscribe = window.fsOnSnapshot(gradeDocRef, (docSnap) => {
+        if (docSnap.exists() && docSnap.data().map && typeof docSnap.data().map === 'object') {
+          studentGradeMap = docSnap.data().map;
+          localStorage.setItem('badminton_student_grades_v1', JSON.stringify(studentGradeMap));
+          if (!studentGradeModal.classList.contains('hidden')) {
+            renderStudentGradeList();
+          }
+          updateAutoGradePreview();
+        } else {
+          saveStudentGradeData();
+        }
+      }, (err) => {
+        console.error("學員年級總表 Firestore 監聽失敗:", err);
+      });
+    }
+
     function getCoachObj(coachName) {
       const found = coachList.find(c => c.name === coachName);
       return found || { name: coachName || '無', rate1: 600, rate2: 400 };
@@ -512,6 +692,7 @@
       if (unsubscribe) unsubscribe(); 
 
       setupCoachFirestoreListener();
+      setupStudentGradeFirestoreListener();
 
       if (!bookings[currentDate]) {
         bookings[currentDate] = { eventTitle: '', nightOnly: false, hideAllSlots: false, slots: {} };
@@ -551,10 +732,10 @@
       });
     }
 
-    function saveData() {
+    function saveData(targetDate = currentDate) {
       if (window.db) {
-        const docRef = window.fsDoc(window.db, "bookings", currentDate);
-        window.fsSetDoc(docRef, bookings[currentDate] || { eventTitle: '', nightOnly: false, hideAllSlots: false, slots: {} }).catch(err => console.error(err));
+        const docRef = window.fsDoc(window.db, "bookings", targetDate);
+        window.fsSetDoc(docRef, bookings[targetDate] || { eventTitle: '', nightOnly: false, hideAllSlots: false, slots: {} }).catch(err => console.error(err));
       }
       localStorage.setItem('badminton_excel_bookings', JSON.stringify(bookings));
     }
@@ -582,6 +763,27 @@
     const marqueeContainer = document.getElementById('marquee-container');
     const dayEventMarquee = document.getElementById('day-event-marquee');
     const marqueeText = document.getElementById('marquee-text');
+
+    const openQuickParseBtn = document.getElementById('open-quick-parse-btn');
+    const quickParseModal = document.getElementById('quick-parse-modal');
+    const closeQuickParseBtn = document.getElementById('close-quick-parse-btn');
+    const cancelQuickParseBtn = document.getElementById('cancel-quick-parse-btn');
+    const clearQuickParseBtn = document.getElementById('clear-quick-parse-btn');
+    const fillQuickExampleBtn = document.getElementById('fill-quick-example-btn');
+    const submitQuickParseBtn = document.getElementById('submit-quick-parse-btn');
+    const quickParseTextarea = document.getElementById('quick-parse-textarea');
+    const quickParseResult = document.getElementById('quick-parse-result');
+
+    const manageStudentsBtn = document.getElementById('manage-students-btn');
+    const studentGradeModal = document.getElementById('student-grade-modal');
+    const closeStudentGradeModalBtn = document.getElementById('close-student-grade-modal-btn');
+    const importStudentsFromBookingsBtn = document.getElementById('import-students-from-bookings-btn');
+    const studentGradeSearch = document.getElementById('student-grade-search');
+    const studentGradeFilter = document.getElementById('student-grade-filter');
+    const studentGradeList = document.getElementById('student-grade-list');
+    const newStudentGradeName = document.getElementById('new-student-grade-name');
+    const newStudentGradeSelect = document.getElementById('new-student-grade-select');
+    const addStudentGradeBtn = document.getElementById('add-student-grade-btn');
 
     const openStatsBtn = document.getElementById('open-stats-btn');
     const nightOnlyCheckbox = document.getElementById('night-only-checkbox');
@@ -621,6 +823,10 @@
     const statsTypeSelect = document.getElementById('stats-type-select');
     const statsTargetSelect = document.getElementById('stats-target-select');
     const statsRangeSelect = document.getElementById('stats-range-select');
+    const singleDateSwitcher = document.getElementById('single-date-switcher');
+    const statsPrevDayBtn = document.getElementById('stats-prev-day-btn');
+    const statsSingleDateInput = document.getElementById('stats-single-date');
+    const statsNextDayBtn = document.getElementById('stats-next-day-btn');
     const customDateRangeWrapper = document.getElementById('custom-date-range-wrapper');
     const statsStartDateInput = document.getElementById('stats-start-date');
     const statsEndDateInput = document.getElementById('stats-end-date');
@@ -654,8 +860,9 @@
     const otherFields = document.getElementById('other-fields');
     
     const inputStudent = document.getElementById('input-student');
-    const inputGrade = document.getElementById('input-grade');
-    const gradeFieldContainer = document.getElementById('grade-field-container');
+    const autoGradePreview = document.getElementById('auto-grade-preview');
+    const autoGradePreviewText = document.getElementById('auto-grade-preview-text');
+    const quickOpenGradeMasterBtn = document.getElementById('quick-open-grade-master-btn');
     const selectCoach = document.getElementById('select-coach');
     const inputTimeNote = document.getElementById('input-time-note');
     const inputOtherNote = document.getElementById('input-other-note');
@@ -668,9 +875,10 @@
         nightToggleWrapper.classList.add('flex');
         hideDayToggleWrapper.classList.remove('hidden');
         hideDayToggleWrapper.classList.add('flex');
+        manageStudentsBtn.classList.remove('hidden');
         manageCoachesBtn.classList.remove('hidden');
         openStatsBtn.classList.remove('hidden');
-        gradeFieldContainer.classList.remove('hidden');
+        openQuickParseBtn.classList.remove('hidden');
         adminLockIcon.className = 'fa-solid fa-lock-open';
         adminBtnText.innerText = '管理員登出';
         adminLoginBtn.className = 'bg-rose-600 hover:bg-rose-500 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1 shrink-0';
@@ -678,9 +886,11 @@
         clearDayBtn.classList.add('hidden');
         nightToggleWrapper.classList.add('hidden');
         hideDayToggleWrapper.classList.add('hidden');
+        manageStudentsBtn.classList.add('hidden');
         manageCoachesBtn.classList.add('hidden');
         openStatsBtn.classList.add('hidden');
-        gradeFieldContainer.classList.add('hidden');
+        openQuickParseBtn.classList.add('hidden');
+        autoGradePreview.classList.add('hidden');
         adminLockIcon.className = 'fa-solid fa-lock';
         adminBtnText.innerText = '管理員登入';
         adminLoginBtn.className = 'bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1 shrink-0';
@@ -689,6 +899,184 @@
       }
       updateEventBannerDisplay();
     }
+
+    function updateAutoGradePreview() {
+      if (!isAdminLoggedIn || currentBookingType !== 'personal') {
+        autoGradePreview.classList.add('hidden');
+        return;
+      }
+      const rawName = inputStudent.value.trim();
+      if (!rawName) {
+        autoGradePreview.classList.add('hidden');
+        return;
+      }
+
+      const names = rawName.split('/').map(n => n.trim()).filter(n => n !== '');
+      const statusParts = names.map(n => {
+        const g = getSingleStudentGrade(n, '');
+        return g ? `${n}：${g}` : `${n}：未設定`;
+      });
+
+      const hasAnySet = names.some(n => getSingleStudentGrade(n, '') !== '');
+      autoGradePreviewText.innerHTML = `<i class="fa-solid fa-graduation-cap mr-1"></i>總表年級自動帶入｜<b>${statusParts.join(' / ')}</b>`;
+      autoGradePreview.className = `mt-1.5 text-[11px] px-2 py-1 rounded border flex items-center justify-between ${
+        hasAnySet ? 'bg-teal-50 border-teal-200 text-teal-800' : 'bg-amber-50 border-amber-200 text-amber-800'
+      }`;
+      autoGradePreview.classList.remove('hidden');
+    }
+
+    inputStudent.addEventListener('input', updateAutoGradePreview);
+
+    quickOpenGradeMasterBtn.addEventListener('click', () => {
+      if (!isAdminLoggedIn) return;
+      const rawName = inputStudent.value.trim();
+      if (rawName) {
+        const firstUnset = rawName.split('/').map(n => n.trim()).find(n => n && !getSingleStudentGrade(n, ''));
+        newStudentGradeName.value = firstUnset || rawName.split('/')[0].trim();
+      }
+      renderStudentGradeList();
+      studentGradeModal.classList.remove('hidden');
+    });
+
+    // ==========================================
+    // 🎓 學員年級總表管理邏輯
+    // ==========================================
+    manageStudentsBtn.addEventListener('click', () => {
+      if (!isAdminLoggedIn) return;
+      studentGradeSearch.value = '';
+      studentGradeFilter.value = 'ALL';
+      renderStudentGradeList();
+      studentGradeModal.classList.remove('hidden');
+    });
+
+    closeStudentGradeModalBtn.addEventListener('click', () => {
+      studentGradeModal.classList.add('hidden');
+      updateAutoGradePreview();
+    });
+
+    studentGradeSearch.addEventListener('input', renderStudentGradeList);
+    studentGradeFilter.addEventListener('change', renderStudentGradeList);
+
+    function renderStudentGradeList() {
+      studentGradeList.innerHTML = '';
+      const keyword = studentGradeSearch.value.trim().toLowerCase();
+      const filterGrade = studentGradeFilter.value;
+
+      const entries = Object.entries(studentGradeMap)
+        .filter(([name, grade]) => {
+          if (keyword && !name.toLowerCase().includes(keyword)) return false;
+          if (filterGrade === 'UNSET') return !grade;
+          if (filterGrade !== 'ALL') return grade === filterGrade;
+          return true;
+        })
+        .sort((a, b) => {
+          const rankA = getGradeRank(a[1]);
+          const rankB = getGradeRank(b[1]);
+          if (rankA !== rankB) return rankA - rankB;
+          return a[0].localeCompare(b[0], 'zh-Hant');
+        });
+
+      if (entries.length === 0) {
+        studentGradeList.innerHTML = '<div class="text-xs text-slate-400 text-center py-6 bg-slate-50 rounded border border-dashed">目前無符合條件的學員資料</div>';
+        return;
+      }
+
+      entries.forEach(([name, currentGrade]) => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between gap-2 bg-slate-50 p-2 rounded-md border border-slate-200 hover:bg-teal-50/40 transition';
+
+        let optionsHtml = `<option value="" ${!currentGrade ? 'selected' : ''}>-- 未設定年級 --</option>`;
+        GRADE_OPTIONS.forEach(g => {
+          optionsHtml += `<option value="${g}" ${currentGrade === g ? 'selected' : ''}>${g}</option>`;
+        });
+
+        row.innerHTML = `
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="font-bold text-xs text-slate-800 truncate">${name}</span>
+            ${!currentGrade ? '<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-medium">待設定</span>' : ''}
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <select class="text-xs p-1.5 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-teal-500 font-medium student-grade-row-select" data-name="${name}">
+              ${optionsHtml}
+            </select>
+            <button type="button" class="bg-rose-600 hover:bg-rose-500 text-white px-2.5 py-1.5 rounded text-xs transition delete-student-grade-btn" data-name="${name}" title="從總表移除">
+              刪除
+            </button>
+          </div>
+        `;
+        studentGradeList.appendChild(row);
+      });
+
+      studentGradeList.querySelectorAll('.student-grade-row-select').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+          const sName = e.target.dataset.name;
+          studentGradeMap[sName] = e.target.value;
+          saveStudentGradeData();
+          renderStudentGradeList();
+        });
+      });
+
+      studentGradeList.querySelectorAll('.delete-student-grade-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const sName = e.target.dataset.name;
+          if (confirm(`確定要從年級總表移除學員「${sName}」嗎？`)) {
+            delete studentGradeMap[sName];
+            saveStudentGradeData();
+            renderStudentGradeList();
+          }
+        });
+      });
+    }
+
+    addStudentGradeBtn.addEventListener('click', () => {
+      const nameVal = newStudentGradeName.value.trim();
+      const gradeVal = newStudentGradeSelect.value;
+      if (!nameVal) {
+        alert('請輸入學員姓名！');
+        return;
+      }
+      if (nameVal.includes('/')) {
+        alert('總表請逐一輸入單一學員姓名（勿包含斜線 /）！');
+        return;
+      }
+      studentGradeMap[nameVal] = gradeVal;
+      saveStudentGradeData();
+      newStudentGradeName.value = '';
+      renderStudentGradeList();
+    });
+
+    newStudentGradeName.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') addStudentGradeBtn.click();
+    });
+
+    importStudentsFromBookingsBtn.addEventListener('click', () => {
+      let addedCount = 0;
+      Object.values(bookings).forEach(dayData => {
+        if (!dayData || !dayData.slots) return;
+        Object.values(dayData.slots).forEach(slot => {
+          if (slot.type === 'personal' && slot.student) {
+            const names = slot.student.split('/').map(n => n.trim()).filter(n => n !== '');
+            names.forEach(n => {
+              if (!Object.prototype.hasOwnProperty.call(studentGradeMap, n)) {
+                studentGradeMap[n] = slot.grade || '';
+                addedCount++;
+              } else if (!studentGradeMap[n] && slot.grade) {
+                studentGradeMap[n] = slot.grade;
+                addedCount++;
+              }
+            });
+          }
+        });
+      });
+
+      if (addedCount > 0) {
+        saveStudentGradeData();
+        renderStudentGradeList();
+        alert(`已成功從預約紀錄匯入 ${addedCount} 筆學員資料至總表！`);
+      } else {
+        alert('目前載入的預約紀錄中，所有學員皆已在總表內！');
+      }
+    });
 
     function updateEventBannerDisplay() {
       const val = (bookings[currentDate] && bookings[currentDate].eventTitle) || '';
@@ -745,19 +1133,351 @@
       renderGrid();
     });
 
-    openStatsBtn.addEventListener('click', async () => {
+    // ==========================================
+    // ⚡ 管理者特殊欄位：快速文字預約 / 取消功能
+    // ==========================================
+    openQuickParseBtn.addEventListener('click', () => {
       if (!isAdminLoggedIn) return;
-      if (!statsStartDateInput.value) statsStartDateInput.value = currentDate;
-      if (!statsEndDateInput.value) statsEndDateInput.value = currentDate;
-      
-      if (statsRangeSelect.value === 'custom') {
+      quickParseResult.classList.add('hidden');
+      quickParseResult.innerHTML = '';
+      quickParseModal.classList.remove('hidden');
+      quickParseTextarea.focus();
+    });
+
+    closeQuickParseBtn.addEventListener('click', () => quickParseModal.classList.add('hidden'));
+    cancelQuickParseBtn.addEventListener('click', () => quickParseModal.classList.add('hidden'));
+
+    clearQuickParseBtn.addEventListener('click', () => {
+      quickParseTextarea.value = '';
+      quickParseResult.classList.add('hidden');
+      quickParseResult.innerHTML = '';
+      quickParseTextarea.focus();
+    });
+
+    fillQuickExampleBtn.addEventListener('click', () => {
+      quickParseTextarea.value = '冬孜(張教練)\n11/14(六) 14:00-15:00(新增)';
+      quickParseTextarea.focus();
+    });
+
+    function normalizeLineText(str) {
+      return str
+        .replace(/（/g, '(')
+        .replace(/）/g, ')')
+        .replace(/：/g, ':')
+        .replace(/[～~–—]/g, '-')
+        .trim();
+    }
+
+    function resolveCoachName(rawCoach) {
+      if (!rawCoach) return '';
+      const trimmed = rawCoach.trim();
+      const exact = coachList.find(c => c.name === trimmed);
+      if (exact) return exact.name;
+      const withSuffix = coachList.find(c => c.name === `${trimmed}教練`);
+      if (withSuffix) return withSuffix.name;
+      return trimmed;
+    }
+
+    submitQuickParseBtn.addEventListener('click', async () => {
+      if (!isAdminLoggedIn) return;
+      const rawText = quickParseTextarea.value;
+      const lines = rawText.split(/\r?\n/).map(l => normalizeLineText(l)).filter(l => l !== '');
+
+      if (lines.length === 0) {
+        alert('請先貼上預約文字內容！');
+        return;
+      }
+
+      submitQuickParseBtn.disabled = true;
+      submitQuickParseBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 處理中...';
+
+      const baseYear = parseInt(currentDate.split('-')[0], 10) || new Date().getFullYear();
+      let currentStudent = '';
+      let currentCoach = '';
+      const tasks = [];
+      const logs = [];
+
+      const scheduleRegex = /^(\d{1,2})[\/\-](\d{1,2})(?:\([^)]*\))?\s*(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})(?:\(([^)]*)\))?(.*)$/;
+
+      lines.forEach((line, idx) => {
+        const match = line.match(scheduleRegex);
+        if (match) {
+          if (!currentStudent) {
+            logs.push({ ok: false, msg: `第 ${idx + 1} 行「${line}」缺少上方「選手姓名(教練名)」標題，已略過。` });
+            return;
+          }
+
+          const month = parseInt(match[1], 10);
+          const day = parseInt(match[2], 10);
+          const startH = parseInt(match[3], 10);
+          const startM = parseInt(match[4], 10);
+          const endH = parseInt(match[5], 10);
+          const endM = parseInt(match[6], 10);
+          const actionRaw = (match[7] || '').trim();
+          const extraTail = (match[8] || '').trim();
+
+          const dTest = new Date(baseYear, month - 1, day);
+          if (dTest.getMonth() !== month - 1 || dTest.getDate() !== day) {
+            logs.push({ ok: false, msg: `第 ${idx + 1} 行日期「${month}/${day}」無效，已略過。` });
+            return;
+          }
+          const targetDateStr = `${baseYear}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+          const combinedAction = `${actionRaw} ${extraTail}`;
+          let action = 'add';
+          if (combinedAction.includes('取消')) {
+            action = 'cancel';
+          } else if (combinedAction.includes('新增') || actionRaw === '') {
+            action = 'add';
+          } else {
+            logs.push({ ok: false, msg: `第 ${idx + 1} 行無法辨識動作「(${actionRaw})」，請填寫 (新增) 或 (取消)。` });
+            return;
+          }
+
+          let specifiedCourtIdx = null;
+          const courtMatch = combinedAction.match(/場地\s*([1-3])/);
+          if (courtMatch) {
+            specifiedCourtIdx = parseInt(courtMatch[1], 10) - 1;
+          }
+
+          const startSlotIdx = startH - 7;
+          if (startSlotIdx < 0 || startSlotIdx >= ALL_TIME_SLOTS.length) {
+            logs.push({ ok: false, msg: `第 ${idx + 1} 行時間「${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}」超出開放時段 (07:00-21:00)。` });
+            return;
+          }
+
+          let slotIndices = [startSlotIdx];
+          let timeNote = '';
+          const isExactHour = (startM === 0 && endM === 0 && endH > startH);
+          if (isExactHour) {
+            const duration = endH - startH;
+            slotIndices = [];
+            for (let k = 0; k < duration; k++) {
+              if (startSlotIdx + k < ALL_TIME_SLOTS.length) {
+                slotIndices.push(startSlotIdx + k);
+              }
+            }
+          } else {
+            timeNote = `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}-${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+          }
+
+          tasks.push({
+            lineNum: idx + 1,
+            targetDate: targetDateStr,
+            displayDate: `${month}/${day}`,
+            displayTime: `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}-${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`,
+            student: currentStudent,
+            coach: currentCoach,
+            action,
+            slotIndices,
+            timeNote,
+            specifiedCourtIdx
+          });
+        } else {
+          const headerMatch = line.match(/^(.+?)(?:\((.+?)\))?$/);
+          if (headerMatch) {
+            currentStudent = headerMatch[1].trim();
+            currentCoach = resolveCoachName(headerMatch[2] || '');
+          }
+        }
+      });
+
+      const uniqueDates = [...new Set(tasks.map(t => t.targetDate))];
+      await fetchMissingDatesData(uniqueDates);
+
+      const modifiedDates = new Set();
+
+      tasks.forEach(task => {
+        if (!bookings[task.targetDate]) {
+          bookings[task.targetDate] = { eventTitle: '', nightOnly: false, hideAllSlots: false, slots: {} };
+        }
+        if (!bookings[task.targetDate].slots) {
+          bookings[task.targetDate].slots = {};
+        }
+
+        const daySlots = bookings[task.targetDate].slots;
+        const candidateCourts = task.specifiedCourtIdx !== null ? [task.specifiedCourtIdx] : [0, 1, 2];
+        const coachDisplay = task.coach ? `(${task.coach})` : '';
+        const autoGrade = getBookingGradeFromMaster(task.student, '');
+
+        if (task.action === 'add') {
+          let alreadyExists = false;
+          for (let c = 0; c < COURTS.length; c++) {
+            const existing = daySlots[`${c}_${task.slotIndices[0]}`];
+            if (existing && existing.type === 'personal' && existing.student === task.student && (existing.coach || '') === task.coach) {
+              alreadyExists = true;
+              break;
+            }
+          }
+          if (alreadyExists) {
+            logs.push({ ok: false, msg: `⚠️ ${task.displayDate} ${task.displayTime}【${task.student}${coachDisplay}】已存在相同預約，略過新增。` });
+            return;
+          }
+
+          let chosenCourtForAll = null;
+          for (const cIdx of candidateCourts) {
+            const allFree = task.slotIndices.every(sIdx => !daySlots[`${cIdx}_${sIdx}`]);
+            if (allFree) {
+              chosenCourtForAll = cIdx;
+              break;
+            }
+          }
+
+          if (chosenCourtForAll !== null) {
+            task.slotIndices.forEach(sIdx => {
+              daySlots[`${chosenCourtForAll}_${sIdx}`] = {
+                type: 'personal',
+                student: task.student,
+                grade: autoGrade,
+                coach: task.coach,
+                timeNote: task.timeNote,
+                otherNote: ''
+              };
+            });
+            modifiedDates.add(task.targetDate);
+            logs.push({
+              ok: true,
+              msg: `✅ 已新增：${task.displayDate} ${task.displayTime}｜${COURTS[chosenCourtForAll]}｜${task.student}${coachDisplay}${autoGrade ? ` [${autoGrade}]` : ''}`
+            });
+          } else {
+            let bookedCourts = [];
+            let failedSlots = [];
+            task.slotIndices.forEach(sIdx => {
+              const freeCourt = candidateCourts.find(cIdx => !daySlots[`${cIdx}_${sIdx}`]);
+              if (freeCourt !== undefined) {
+                daySlots[`${freeCourt}_${sIdx}`] = {
+                  type: 'personal',
+                  student: task.student,
+                  grade: autoGrade,
+                  coach: task.coach,
+                  timeNote: task.timeNote,
+                  otherNote: ''
+                };
+                bookedCourts.push(`${ALL_TIME_SLOTS[sIdx].replace(/\s~\s/g, '-')}(${COURTS[freeCourt]})`);
+                modifiedDates.add(task.targetDate);
+              } else {
+                failedSlots.push(ALL_TIME_SLOTS[sIdx].replace(/\s~\s/g, '-'));
+              }
+            });
+
+            if (bookedCourts.length > 0) {
+              logs.push({ ok: true, msg: `✅ 部分新增：${task.displayDate}｜${bookedCourts.join('、')}｜${task.student}${coachDisplay}` });
+            }
+            if (failedSlots.length > 0) {
+              logs.push({ ok: false, msg: `❌ ${task.displayDate} ${failedSlots.join('、')} 所有場地皆已額滿，無法預約【${task.student}${coachDisplay}】。` });
+            }
+          }
+        } else if (task.action === 'cancel') {
+          let cancelledCount = 0;
+          let cancelledDetails = [];
+
+          task.slotIndices.forEach(sIdx => {
+            for (const cIdx of candidateCourts) {
+              const key = `${cIdx}_${sIdx}`;
+              const existing = daySlots[key];
+              if (existing && existing.type === 'personal' && existing.student === task.student) {
+                if (!task.coach || (existing.coach || '') === task.coach) {
+                  delete daySlots[key];
+                  cancelledCount++;
+                  cancelledDetails.push(`${COURTS[cIdx]}`);
+                  modifiedDates.add(task.targetDate);
+                  break;
+                }
+              }
+            }
+          });
+
+          if (cancelledCount > 0) {
+            logs.push({
+              ok: true,
+              msg: `🗑️ 已取消：${task.displayDate} ${task.displayTime}｜${[...new Set(cancelledDetails)].join('、')}｜${task.student}${coachDisplay}`
+            });
+          } else {
+            logs.push({
+              ok: false,
+              msg: `⚠️ 找不到可取消的預約：${task.displayDate} ${task.displayTime}｜${task.student}${coachDisplay}`
+            });
+          }
+        }
+      });
+
+      for (const dStr of modifiedDates) {
+        saveData(dStr);
+      }
+
+      quickParseResult.innerHTML = '';
+      if (logs.length === 0) {
+        quickParseResult.innerHTML = '<div class="text-slate-500">未偵測到可執行的日期時段行，請確認格式是否包含「日期 時間(新增/取消)」。</div>';
+      } else {
+        logs.forEach(item => {
+          const div = document.createElement('div');
+          div.className = `p-1.5 rounded border ${item.ok ? 'bg-emerald-50 border-emerald-200 text-emerald-900 font-medium' : 'bg-rose-50 border-rose-200 text-rose-800'}`;
+          div.innerText = item.msg;
+          quickParseResult.appendChild(div);
+        });
+      }
+      quickParseResult.classList.remove('hidden');
+
+      submitQuickParseBtn.disabled = false;
+      submitQuickParseBtn.innerHTML = '<i class="fa-solid fa-bolt"></i> 執行自動預約 / 取消';
+
+      if (modifiedDates.size > 0) {
+        const firstModifiedDate = [...modifiedDates][0];
+        if (firstModifiedDate !== currentDate) {
+          currentDate = firstModifiedDate;
+          datePicker.value = currentDate;
+          selectedCells.clear();
+          renderDateTabs();
+          setupFirestoreListener();
+          updateActionBar();
+        } else {
+          renderGrid();
+        }
+      }
+    });
+
+    // ==========================================
+    // 📊 統計報表（僅當日統計 + 日期切換器 / 自訂日期區間）
+    // ==========================================
+    function getStatsTargetDates() {
+      const range = statsRangeSelect.value;
+      if (range === 'current') {
+        const singleD = statsSingleDateInput.value || currentDate;
+        return [singleD];
+      } else {
         const start = statsStartDateInput.value;
         const end = statsEndDateInput.value;
         if (start && end && start <= end) {
-          statsLoadingOverlay.classList.remove('hidden');
-          await fetchMissingDatesData(getDateRangeArray(start, end));
-          statsLoadingOverlay.classList.add('hidden');
+          return getDateRangeArray(start, end);
         }
+        return [];
+      }
+    }
+
+    function syncStatsRangeVisibility() {
+      const range = statsRangeSelect.value;
+      if (range === 'current') {
+        singleDateSwitcher.classList.remove('hidden');
+        customDateRangeWrapper.classList.add('hidden');
+      } else {
+        singleDateSwitcher.classList.add('hidden');
+        customDateRangeWrapper.classList.remove('hidden');
+      }
+    }
+
+    openStatsBtn.addEventListener('click', async () => {
+      if (!isAdminLoggedIn) return;
+      statsSingleDateInput.value = currentDate;
+      if (!statsStartDateInput.value) statsStartDateInput.value = currentDate;
+      if (!statsEndDateInput.value) statsEndDateInput.value = currentDate;
+      
+      syncStatsRangeVisibility();
+
+      const targetDates = getStatsTargetDates();
+      if (targetDates.length > 0) {
+        statsLoadingOverlay.classList.remove('hidden');
+        await fetchMissingDatesData(targetDates);
+        statsLoadingOverlay.classList.add('hidden');
       }
 
       populateStatsTargetSelect();
@@ -775,30 +1495,42 @@
     
     statsTargetSelect.addEventListener('change', renderStatsData);
 
-    async function handleDateRangeChange() {
-      const range = statsRangeSelect.value;
-      if (range === 'custom') {
-        customDateRangeWrapper.classList.remove('hidden');
-        const start = statsStartDateInput.value;
-        const end = statsEndDateInput.value;
-        if (start && end && start <= end) {
-          statsLoadingOverlay.classList.remove('hidden');
-          await fetchMissingDatesData(getDateRangeArray(start, end));
-          statsLoadingOverlay.classList.add('hidden');
-        }
-      } else {
-        customDateRangeWrapper.classList.add('hidden');
+    async function handleStatsDateOrRangeChange() {
+      syncStatsRangeVisibility();
+      const targetDates = getStatsTargetDates();
+      if (targetDates.length > 0) {
+        statsLoadingOverlay.classList.remove('hidden');
+        await fetchMissingDatesData(targetDates);
+        statsLoadingOverlay.classList.add('hidden');
       }
       populateStatsTargetSelect();
       renderStatsData();
     }
 
-    statsRangeSelect.addEventListener('change', handleDateRangeChange);
-    statsStartDateInput.addEventListener('change', handleDateRangeChange);
-    statsEndDateInput.addEventListener('change', handleDateRangeChange);
+    statsRangeSelect.addEventListener('change', handleStatsDateOrRangeChange);
+    statsSingleDateInput.addEventListener('change', handleStatsDateOrRangeChange);
+    statsStartDateInput.addEventListener('change', handleStatsDateOrRangeChange);
+    statsEndDateInput.addEventListener('change', handleStatsDateOrRangeChange);
+
+    statsPrevDayBtn.addEventListener('click', () => {
+      const baseStr = statsSingleDateInput.value || currentDate;
+      const d = new Date(baseStr);
+      d.setDate(d.getDate() - 1);
+      statsSingleDateInput.value = d.toISOString().split('T')[0];
+      handleStatsDateOrRangeChange();
+    });
+
+    statsNextDayBtn.addEventListener('click', () => {
+      const baseStr = statsSingleDateInput.value || currentDate;
+      const d = new Date(baseStr);
+      d.setDate(d.getDate() + 1);
+      statsSingleDateInput.value = d.toISOString().split('T')[0];
+      handleStatsDateOrRangeChange();
+    });
 
     function populateStatsTargetSelect() {
       const type = statsTypeSelect.value;
+      const prevSelected = statsTargetSelect.value;
       statsTargetSelect.innerHTML = '';
 
       if (type === 'coach') {
@@ -806,24 +1538,12 @@
           const opt = document.createElement('option');
           opt.value = c.name;
           opt.innerText = c.name;
+          if (c.name === prevSelected) opt.selected = true;
           statsTargetSelect.appendChild(opt);
         });
       } else {
         const studentSet = new Set();
-        const range = statsRangeSelect.value;
-        let targetDates = [];
-
-        if (range === 'current') {
-          targetDates = [currentDate];
-        } else if (range === 'custom') {
-          const start = statsStartDateInput.value;
-          const end = statsEndDateInput.value;
-          if (start && end && start <= end) {
-            targetDates = getDateRangeArray(start, end);
-          }
-        } else {
-          targetDates = Object.keys(bookings);
-        }
+        const targetDates = getStatsTargetDates();
 
         targetDates.forEach(date => {
           const dayData = bookings[date];
@@ -839,13 +1559,14 @@
         if (studentSet.size === 0) {
           const opt = document.createElement('option');
           opt.value = '';
-          opt.innerText = '-- 此區間無學員紀錄 --';
+          opt.innerText = '-- 此日期/區間無學員紀錄 --';
           statsTargetSelect.appendChild(opt);
         } else {
           studentSet.forEach(s => {
             const opt = document.createElement('option');
             opt.value = s;
             opt.innerText = s;
+            if (s === prevSelected) opt.selected = true;
             statsTargetSelect.appendChild(opt);
           });
         }
@@ -899,7 +1620,7 @@
     async function renderStatsData() {
       const type = statsTypeSelect.value;
       const target = statsTargetSelect.value;
-      const range = statsRangeSelect.value;
+      const targetDates = getStatsTargetDates();
 
       statsTargetLabel.innerText = target || '(無選項)';
       statsTableBody.innerHTML = '';
@@ -914,29 +1635,13 @@
         return;
       }
 
-      let matchedSlots = [];
-      let targetDates = [];
-
-      if (range === 'current') {
-        targetDates = [currentDate];
-      } else if (range === 'custom') {
-        const start = statsStartDateInput.value;
-        const end = statsEndDateInput.value;
-        if (start && end && start <= end) {
-          targetDates = getDateRangeArray(start, end);
-        } else {
-          targetDates = [];
-        }
-      } else {
-        targetDates = Object.keys(bookings);
-      }
-
-      if (range === 'custom' && targetDates.length > 0) {
+      if (targetDates.length > 0) {
         statsLoadingOverlay.classList.remove('hidden');
         await fetchMissingDatesData(targetDates);
         statsLoadingOverlay.classList.add('hidden');
       }
 
+      let matchedSlots = [];
       let count1on1 = 0;
       let count1on2 = 0;
       let totalCalculatedFee = 0;
@@ -952,7 +1657,6 @@
             const hasSlash = rawStudentStr.includes('/');
             const studentList = hasSlash ? rawStudentStr.split('/').map(n => n.trim()).filter(n => n !== '') : [rawStudentStr.trim()];
             const noteStr = slot.timeNote || '';
-            const gradeStr = slot.grade || '';
             
             const is1on2 = hasSlash;
             const coachObj = getCoachObj(slot.coach);
@@ -963,6 +1667,7 @@
               if (isMatch) {
                 const [cIdx, tIdx] = sKey.split('_').map(Number);
                 const slotTypeLabel = is1on2 ? '1對2' : '1對1';
+                const resolvedGrade = getSingleStudentGrade(singleStudent, slot.grade || '');
 
                 if (is1on2) count1on2 += 1;
                 else count1on1 += 1;
@@ -979,7 +1684,7 @@
                   typeLabel: slotTypeLabel,
                   unitRate: unitRate,
                   is1on2: is1on2,
-                  grade: gradeStr,
+                  grade: resolvedGrade,
                   timeNote: noteStr || '-'
                 });
               }
@@ -1030,20 +1735,9 @@
     // 📥 匯出當前對象報表
     exportExcelBtn.addEventListener('click', async () => {
       const range = statsRangeSelect.value;
-      let targetDates = [];
-      if (range === 'current') {
-        targetDates = [currentDate];
-      } else if (range === 'custom') {
-        const start = statsStartDateInput.value;
-        const end = statsEndDateInput.value;
-        if (start && end && start <= end) {
-          targetDates = getDateRangeArray(start, end);
-        }
-      } else {
-        targetDates = Object.keys(bookings);
-      }
+      const targetDates = getStatsTargetDates();
 
-      if (range === 'custom' && targetDates.length > 0) {
+      if (targetDates.length > 0) {
         statsLoadingOverlay.classList.remove('hidden');
         await fetchMissingDatesData(targetDates);
         statsLoadingOverlay.classList.add('hidden');
@@ -1066,7 +1760,6 @@
             const coachName = slot.coach || '無';
             const coachObj = getCoachObj(coachName);
             const unitRate = is1on2 ? coachObj.rate2 : coachObj.rate1;
-            const gradeStr = slot.grade || '';
 
             studentList.forEach(singleStudent => {
               const isMatch = (type === 'coach' && coachName === target) || (type === 'student' && singleStudent === target);
@@ -1079,12 +1772,13 @@
                 const otherStudents = studentList.filter(n => n !== singleStudent);
                 const partnerNote = (is1on2 && otherStudents.length > 0) ? ` (with ${otherStudents.join('/')})` : '';
                 const formattedTime = `${monthDayStr} ${timeDisplay}${partnerNote}`;
+                const resolvedGrade = getSingleStudentGrade(singleStudent, slot.grade || '');
 
                 allSlots.push({
                   date: dStr,
                   student: singleStudent,
                   coach: coachName,
-                  grade: gradeStr,
+                  grade: resolvedGrade,
                   formattedTime: formattedTime,
                   is1on2: is1on2,
                   unitRate: unitRate
@@ -1135,7 +1829,13 @@
         return a.student.localeCompare(b.student, 'zh-Hant');
       });
 
-      let dateTitleStr = range === 'custom' ? `${statsStartDateInput.value} ~ ${statsEndDateInput.value}` : range === 'current' ? currentDate : '個人練習統計表';
+      const activeSingleDate = statsSingleDateInput.value || currentDate;
+      const dateTitleStr = range === 'custom'
+        ? `${statsStartDateInput.value} ~ ${statsEndDateInput.value}`
+        : activeSingleDate;
+      const fileDateSuffix = range === 'custom'
+        ? `${statsStartDateInput.value}_${statsEndDateInput.value}`
+        : activeSingleDate;
 
       const excelRows = [
         [null, '請教練或家長溝通好，自行登記個練訓練時間，並由雙方確認訓練時間, 費用無誤後，於每月1日晚上21：00前停止登記前一個月的時數。'],
@@ -1166,26 +1866,15 @@
 
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "個練統計表");
-      XLSX.writeFile(wb, `個練統計表_${target}_${currentDate}.xlsx`);
+      XLSX.writeFile(wb, `個練統計表_${target}_${fileDateSuffix}.xlsx`);
     });
 
     // 📥 匯出全體學員總表 (.xlsx)
     exportAllStudentsExcelBtn.addEventListener('click', async () => {
       const range = statsRangeSelect.value;
-      let targetDates = [];
-      if (range === 'current') {
-        targetDates = [currentDate];
-      } else if (range === 'custom') {
-        const start = statsStartDateInput.value;
-        const end = statsEndDateInput.value;
-        if (start && end && start <= end) {
-          targetDates = getDateRangeArray(start, end);
-        }
-      } else {
-        targetDates = Object.keys(bookings);
-      }
+      const targetDates = getStatsTargetDates();
 
-      if (range === 'custom' && targetDates.length > 0) {
+      if (targetDates.length > 0) {
         statsLoadingOverlay.classList.remove('hidden');
         await fetchMissingDatesData(targetDates);
         statsLoadingOverlay.classList.add('hidden');
@@ -1205,7 +1894,6 @@
             const coachName = slot.coach || '無';
             const coachObj = getCoachObj(coachName);
             const unitRate = is1on2 ? coachObj.rate2 : coachObj.rate1;
-            const gradeStr = slot.grade || '';
 
             studentList.forEach(singleStudent => {
               const [cIdx, tIdx] = sKey.split('_').map(Number);
@@ -1216,12 +1904,13 @@
               const otherStudents = studentList.filter(n => n !== singleStudent);
               const partnerNote = (is1on2 && otherStudents.length > 0) ? ` (with ${otherStudents.join('/')})` : '';
               const formattedTime = `${monthDayStr} ${timeDisplay}${partnerNote}`;
+              const resolvedGrade = getSingleStudentGrade(singleStudent, slot.grade || '');
 
               allSlots.push({
                 date: dStr,
                 student: singleStudent,
                 coach: coachName,
-                grade: gradeStr,
+                grade: resolvedGrade,
                 formattedTime: formattedTime,
                 is1on2: is1on2,
                 unitRate: unitRate
@@ -1271,7 +1960,13 @@
         return a.student.localeCompare(b.student, 'zh-Hant');
       });
 
-      let dateRangeLabel = range === 'custom' ? `${statsStartDateInput.value} ~ ${statsEndDateInput.value}` : range === 'current' ? `當日 (${currentDate})` : '全體學員個練總表';
+      const activeSingleDate = statsSingleDateInput.value || currentDate;
+      const dateRangeLabel = range === 'custom'
+        ? `${statsStartDateInput.value} ~ ${statsEndDateInput.value}`
+        : `當日 (${activeSingleDate})`;
+      const fileDateSuffix = range === 'custom'
+        ? `${statsStartDateInput.value}_${statsEndDateInput.value}`
+        : activeSingleDate;
 
       const excelRows = [
         [null, '請教練或家長溝通好，自行登記個練訓練時間，並由雙方確認訓練時間、費用無誤後，於每月1日晚上21：00前停止登記前一個月的時數。'],
@@ -1302,7 +1997,7 @@
 
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "全體學員總表");
-      XLSX.writeFile(wb, `全體學員個練總表_${currentDate}.xlsx`);
+      XLSX.writeFile(wb, `全體學員個練總表_${fileDateSuffix}.xlsx`);
     });
 
     function getActiveTimeSlots() {
@@ -1548,7 +2243,6 @@
       const isNightOnly = !!dayData.nightOnly;
       const isHiddenForUser = !!dayData.hideAllSlots && !isAdminLoggedIn;
 
-      // 若非管理員且該日期設為隱藏
       if (isHiddenForUser) {
         gridTable.innerHTML = `
           <div class="flex-1 flex flex-col items-center justify-center p-12 text-center bg-slate-50">
@@ -1632,7 +2326,6 @@
         const headerRow = document.createElement('div');
         headerRow.className = 'flex bg-slate-100 text-slate-700 font-semibold border-b border-slate-300 sticky-header';
         
-        // 放大標題區「場地 / 時間」與時間標籤
         let headerHtml = `<div class="w-24 sm:w-28 p-2 text-center bg-slate-200 border-r border-slate-300 shrink-0 sticky-col font-black flex items-center justify-center text-xs sm:text-sm text-slate-800">場地 / 時間</div>`;
         activeSlots.forEach(({ time }) => {
           const shortTime = time.replace(' ~ ', '-');
@@ -1645,7 +2338,6 @@
           const row = document.createElement('div');
           row.className = 'flex flex-1 border-b border-slate-200 hover:bg-slate-50/50 transition min-h-[50px]';
 
-          // 放大左側場地名稱
           let rowHtml = `<div class="w-24 sm:w-28 p-2 text-center bg-slate-100 font-black text-slate-800 border-r border-slate-300 shrink-0 sticky-col flex items-center justify-center text-xs sm:text-base">${courtName}</div>`;
 
           activeSlots.forEach(({ time, originalIdx }) => {
@@ -1675,7 +2367,6 @@
                 `;
               }
             } else {
-              // 電腦模式空場地顯示「可預約」
               cellClass = 'bg-white hover:bg-slate-100 cursor-pointer';
               contentHtml = `<div class="text-xs text-slate-400 font-medium select-none">可預約</div>`;
             }
@@ -1746,10 +2437,8 @@
       saveBookingBtn.classList.remove('hidden');
       document.getElementById('modal-title').innerText = '新增批次預約';
       inputStudent.value = '';
-      inputGrade.value = '';
       inputOtherNote.value = '';
       inputStudent.removeAttribute('disabled');
-      inputGrade.removeAttribute('disabled');
       selectCoach.removeAttribute('disabled');
       inputTimeNote.removeAttribute('disabled');
       inputOtherNote.removeAttribute('disabled');
@@ -1760,6 +2449,7 @@
       renderCoachSelect('');
       inputTimeNote.value = '';
       setBookingType('personal');
+      updateAutoGradePreview();
 
       let summaryHtml = '<div class="font-bold mb-1">已選擇以下時段格：</div>';
       selectedCells.forEach(key => {
@@ -1777,7 +2467,6 @@
       setBookingType(data.type || 'personal');
       
       inputStudent.value = data.student || '';
-      inputGrade.value = data.grade || '';
       inputOtherNote.value = data.otherNote || '';
       renderCoachSelect(data.coach || '');
       inputTimeNote.value = data.timeNote || '';
@@ -1789,7 +2478,6 @@
         cancelModalAction.innerText = '取消';
         
         inputStudent.removeAttribute('disabled');
-        inputGrade.removeAttribute('disabled');
         selectCoach.removeAttribute('disabled');
         inputTimeNote.removeAttribute('disabled');
         inputOtherNote.removeAttribute('disabled');
@@ -1803,7 +2491,6 @@
         cancelModalAction.innerText = '關閉';
 
         inputStudent.setAttribute('disabled', 'disabled');
-        inputGrade.setAttribute('disabled', 'disabled');
         selectCoach.setAttribute('disabled', 'disabled');
         inputTimeNote.setAttribute('disabled', 'disabled');
         inputOtherNote.setAttribute('disabled', 'disabled');
@@ -1812,13 +2499,13 @@
         typeOtherBtn.setAttribute('disabled', 'disabled');
       }
 
+      updateAutoGradePreview();
       bookingModal.classList.remove('hidden');
     }
 
     function setBookingType(type) {
       currentBookingType = type;
 
-      // 復原預設樣式
       typePersonalBtn.className = 'py-1.5 px-2 border border-slate-300 bg-white text-slate-600 rounded-lg text-xs font-medium text-center transition hover:bg-slate-50';
       typeClubBtn.className = 'py-1.5 px-2 border border-slate-300 bg-white text-slate-600 rounded-lg text-xs font-medium text-center transition hover:bg-slate-50';
       typeOtherBtn.className = 'py-1.5 px-2 border border-slate-300 bg-white text-slate-600 rounded-lg text-xs font-medium text-center transition hover:bg-slate-50';
@@ -1837,6 +2524,7 @@
         typeOtherBtn.className = 'py-1.5 px-2 border border-purple-600 bg-purple-50 text-purple-700 rounded-lg text-xs font-medium text-center transition';
         otherFields.classList.remove('hidden');
       }
+      updateAutoGradePreview();
     }
 
     saveBookingBtn.addEventListener('click', () => {
@@ -1850,10 +2538,12 @@
       else if (currentBookingType === 'club') studentVal = '社團包場';
       else if (currentBookingType === 'other') studentVal = inputOtherNote.value.trim() || '其他用途';
 
+      const autoGrade = currentBookingType === 'personal' ? getBookingGradeFromMaster(studentVal, '') : '';
+
       const bookingPayload = {
         type: currentBookingType,
         student: studentVal,
-        grade: currentBookingType === 'personal' ? inputGrade.value.trim() : '',
+        grade: autoGrade,
         coach: currentBookingType === 'personal' ? selectCoach.value.trim() : '',
         timeNote: currentBookingType === 'personal' ? inputTimeNote.value.trim() : '',
         otherNote: currentBookingType === 'other' ? inputOtherNote.value.trim() : ''

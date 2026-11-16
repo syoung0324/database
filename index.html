@@ -137,7 +137,7 @@
     </div>
   </header>
 
-  <!-- 公開公告摘要與倒數計時器即時資訊列 (一般使用者一開啟網頁即可見) -->
+  <!-- 公開公告摘要與倒數計時器即時資訊列 -->
   <div id="public-top-notice-bar" class="bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 text-white px-2.5 sm:px-4 py-1.5 border-b border-sky-800/80 flex flex-wrap items-center justify-between gap-2 shrink-0 text-xs shadow">
     <!-- 左側：公告摘要條 -->
     <div id="top-announcement-summary" class="flex items-center gap-2 min-w-0 flex-1 cursor-pointer group" title="點擊查看完整公告與教練簡介">
@@ -149,7 +149,7 @@
     </div>
 
     <!-- 右側：即時倒數計時器 -->
-    <div id="top-countdown-box" class="flex items-center gap-1.5 bg-amber-400/15 border border-amber-400/50 px-2.5 py-0.5 rounded-lg shrink-0">
+    <div id="top-countdown-box" class="flex items-center gap-1.5 bg-amber-400/15 border border-amber-400/50 px-2.5 py-0.5 rounded-lg shrink-0 ml-auto">
       <i class="fa-solid fa-hourglass-half text-amber-300 animate-pulse"></i>
       <span id="top-countdown-title" class="text-amber-200 font-bold text-[11px] sm:text-xs">活動倒數：</span>
       <span id="top-countdown-timer" class="font-mono font-black text-amber-300 text-xs sm:text-sm tracking-wide">-- 天 -- 時 -- 分 -- 秒</span>
@@ -285,7 +285,7 @@
           </div>
           <div id="modal-announcement-body" class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line"></div>
           <div id="modal-announcement-image-wrap" class="hidden pt-2">
-            <img id="modal-announcement-image" src="" alt="公告貼圖" class="max-h-48 rounded-lg border border-slate-200 mx-auto object-contain shadow-sm">
+            <img id="modal-announcement-image" src="" alt="公告貼圖" class="max-h-56 rounded-lg border border-slate-200 mx-auto object-contain shadow-sm">
           </div>
         </div>
 
@@ -303,10 +303,13 @@
         </div>
       </div>
 
-      <!-- Footer -->
-      <div class="p-3.5 bg-white border-t border-slate-200 flex items-center justify-between shrink-0">
-        <span class="text-[11px] text-slate-400">可隨時點擊上方「公告 / 教練簡介」按鈕再次查看</span>
-        <button id="confirm-public-announcement-btn" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow transition">
+      <!-- Footer：新增「下次開啟不再自動顯示此則公告」勾選框 -->
+      <div class="p-3.5 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 shrink-0">
+        <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer select-none hover:text-slate-950">
+          <input type="checkbox" id="dont-show-same-ann-checkbox" class="w-4 h-4 accent-emerald-600 rounded cursor-pointer">
+          <span>下次開啟不再自動顯示此則公告 <span class="text-[11px] font-normal text-slate-400">(若有新公告會再次提醒)</span></span>
+        </label>
+        <button id="confirm-public-announcement-btn" class="w-full sm:w-auto px-5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow transition shrink-0">
           我知道了，進入預約表
         </button>
       </div>
@@ -400,9 +403,26 @@
             <textarea id="admin-ann-content" rows="3" placeholder="輸入公告說明文字..." class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500 leading-relaxed"></textarea>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">附加貼圖 / 海報圖片網址 <span class="text-slate-400 font-normal">(選填，貼上圖片 URL 即可顯示)</span></label>
-            <input type="url" id="admin-ann-image-url" placeholder="https://..." class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono">
+          <!-- 附加貼圖 / 海報圖片：支援直接讀取本機端檔案 + 即時預覽 -->
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-700">
+              附加貼圖 / 海報圖片 <span class="text-slate-400 font-normal">(選填，可直接選取本機圖片檔案或貼上網址)</span>
+            </label>
+            <div class="flex flex-wrap items-center gap-2">
+              <label class="cursor-pointer bg-sky-600 hover:bg-sky-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition shadow-sm flex items-center gap-1.5 shrink-0">
+                <i class="fa-solid fa-folder-open"></i>
+                <span>選擇本機圖片檔案</span>
+                <input type="file" id="admin-ann-image-file" accept="image/*" class="hidden">
+              </label>
+              <span id="admin-ann-file-status" class="text-[11px] text-slate-500 truncate max-w-[240px]">尚未選擇本機檔案</span>
+              <button type="button" id="admin-ann-clear-image-btn" class="hidden text-xs bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold px-2.5 py-1 rounded-lg transition shrink-0">
+                <i class="fa-solid fa-trash-can mr-1"></i>移除圖片
+              </button>
+            </div>
+            <input type="text" id="admin-ann-image-url" placeholder="或貼上外部圖片網址 (https://...)" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono">
+            <div id="admin-ann-image-preview-wrap" class="hidden bg-white p-2.5 rounded-lg border border-slate-200 text-center">
+              <img id="admin-ann-image-preview" src="" alt="圖片預覽" class="max-h-40 mx-auto rounded object-contain shadow-sm">
+            </div>
           </div>
         </div>
 
@@ -885,7 +905,6 @@
     coachList = normalizeCoachList(coachList);
     localStorage.setItem('badminton_coach_list_v2', JSON.stringify(coachList));
 
-    // 預設倒數日期（若尚未設定，預設為 7 天後早上 09:00）
     function getDefaultCountdownTarget() {
       const d = new Date();
       d.setDate(d.getDate() + 7);
@@ -914,7 +933,6 @@
       }
     };
 
-    // 學員年級總表 { "冬孜": "二年級", "以家": "三年級", ... }
     let studentGradeMap = JSON.parse(localStorage.getItem('badminton_student_grades_v1')) || {
       '以家': '三年級',
       '峻誠': '四年級',
@@ -935,8 +953,12 @@
       localStorage.setItem('badminton_board_settings_v1', JSON.stringify(boardSettings));
       if (window.db) {
         const boardDocRef = window.fsDoc(window.db, "settings", "board");
-        window.fsSetDoc(boardDocRef, boardSettings).catch(err => console.error("公告與倒數設定儲存失敗:", err));
+        return window.fsSetDoc(boardDocRef, boardSettings).catch(err => {
+          console.error("公告與倒數設定儲存失敗:", err);
+          alert('雲端儲存時發生錯誤（可能是圖片檔案過大），請嘗試選取較小的圖片或移除圖片後再試！');
+        });
       }
+      return Promise.resolve();
     }
 
     function saveStudentGradeData() {
@@ -1183,6 +1205,7 @@
     const publicAnnouncementModal = document.getElementById('public-announcement-modal');
     const closePublicAnnouncementBtn = document.getElementById('close-public-announcement-btn');
     const confirmPublicAnnouncementBtn = document.getElementById('confirm-public-announcement-btn');
+    const dontShowSameAnnCheckbox = document.getElementById('dont-show-same-ann-checkbox');
     const modalAnnouncementSticker = document.getElementById('modal-announcement-sticker');
     const modalAnnouncementTitle = document.getElementById('modal-announcement-title');
     const modalAnnouncementUpdated = document.getElementById('modal-announcement-updated');
@@ -1211,7 +1234,12 @@
     const adminAnnTitle = document.getElementById('admin-ann-title');
     const stickerPickerGrid = document.getElementById('sticker-picker-grid');
     const adminAnnContent = document.getElementById('admin-ann-content');
+    const adminAnnImageFile = document.getElementById('admin-ann-image-file');
+    const adminAnnFileStatus = document.getElementById('admin-ann-file-status');
+    const adminAnnClearImageBtn = document.getElementById('admin-ann-clear-image-btn');
     const adminAnnImageUrl = document.getElementById('admin-ann-image-url');
+    const adminAnnImagePreviewWrap = document.getElementById('admin-ann-image-preview-wrap');
+    const adminAnnImagePreview = document.getElementById('admin-ann-image-preview');
     const adminAnnShowCoaches = document.getElementById('admin-ann-show-coaches');
     const adminCoachProfilesList = document.getElementById('admin-coach-profiles-list');
 
@@ -1322,11 +1350,43 @@
     // ==========================================
     // 📢 公告系統、教練簡介與倒數計時器邏輯
     // ==========================================
+    function getAnnouncementSignature(ann) {
+      if (!ann) return '';
+      const raw = `${ann.title || ''}||${ann.sticker || ''}||${ann.content || ''}||${ann.imageUrl || ''}`;
+      let hash = 0;
+      for (let i = 0; i < raw.length; i++) {
+        const chr = raw.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
+        hash |= 0;
+      }
+      return `ann_${hash}_${raw.length}`;
+    }
+
+    function syncDismissPreferenceFromCheckbox() {
+      const sig = getAnnouncementSignature(boardSettings.announcement);
+      if (!sig) return;
+      if (dontShowSameAnnCheckbox.checked) {
+        localStorage.setItem('badminton_dismissed_ann_sig', sig);
+      } else {
+        if (localStorage.getItem('badminton_dismissed_ann_sig') === sig) {
+          localStorage.removeItem('badminton_dismissed_ann_sig');
+        }
+      }
+    }
+
+    function syncCheckboxFromDismissPreference() {
+      const sig = getAnnouncementSignature(boardSettings.announcement);
+      const dismissedSig = localStorage.getItem('badminton_dismissed_ann_sig');
+      dontShowSameAnnCheckbox.checked = (!!sig && dismissedSig === sig);
+    }
+
+    dontShowSameAnnCheckbox.addEventListener('change', syncDismissPreferenceFromCheckbox);
+
     function renderPublicAnnouncementUI() {
       const ann = boardSettings.announcement || {};
       const cd = boardSettings.countdown || {};
 
-      // 頂部橫幅顯示控制
+      // 頂部橫幅顯示控制（僅控制頂部公告列是否顯示，不影響彈出視窗）
       const showAnnBar = ann.enabled !== false;
       const showCdBar = cd.enabled !== false && !!cd.targetDateTime;
 
@@ -1428,26 +1488,141 @@
       countdownInterval = setInterval(updateCountdownTick, 1000);
     }
 
+    function openPublicAnnouncementModalManual() {
+      renderPublicAnnouncementUI();
+      syncCheckboxFromDismissPreference();
+      publicAnnouncementModal.classList.remove('hidden');
+    }
+
+    function closePublicAnnouncementModal() {
+      syncDismissPreferenceFromCheckbox();
+      publicAnnouncementModal.classList.add('hidden');
+    }
+
     function maybeAutoOpenAnnouncementModal() {
       if (hasShownAutoPopupThisSession) return;
       const ann = boardSettings.announcement || {};
-      if (ann.enabled !== false && ann.autoPopup !== false) {
+      // 修正：只要「開啟網頁自動彈出視窗」(ann.autoPopup !== false) 有勾選，無論頂部公告列是否顯示，都會在剛進入網站時彈出
+      if (ann.autoPopup !== false) {
+        const currentSig = getAnnouncementSignature(ann);
+        const dismissedSig = localStorage.getItem('badminton_dismissed_ann_sig');
+        if (currentSig && dismissedSig === currentSig) {
+          hasShownAutoPopupThisSession = true;
+          return;
+        }
         hasShownAutoPopupThisSession = true;
         renderPublicAnnouncementUI();
+        syncCheckboxFromDismissPreference();
         publicAnnouncementModal.classList.remove('hidden');
       }
     }
 
-    openPublicAnnouncementBtn.addEventListener('click', () => {
-      renderPublicAnnouncementUI();
-      publicAnnouncementModal.classList.remove('hidden');
+    openPublicAnnouncementBtn.addEventListener('click', openPublicAnnouncementModalManual);
+    topAnnouncementSummary.addEventListener('click', openPublicAnnouncementModalManual);
+    closePublicAnnouncementBtn.addEventListener('click', closePublicAnnouncementModal);
+    confirmPublicAnnouncementBtn.addEventListener('click', closePublicAnnouncementModal);
+
+    // ==========================================
+    // 📁 本機圖片讀取與最佳化壓縮處理
+    // ==========================================
+    function updateAdminImagePreview(srcValue, fileLabel = '') {
+      const cleanSrc = (srcValue || '').trim();
+      if (cleanSrc) {
+        adminAnnImagePreview.src = cleanSrc;
+        adminAnnImagePreviewWrap.classList.remove('hidden');
+        adminAnnClearImageBtn.classList.remove('hidden');
+        if (fileLabel) {
+          adminAnnFileStatus.innerText = fileLabel;
+        } else if (cleanSrc.startsWith('data:image/')) {
+          adminAnnFileStatus.innerText = '已載入本機圖片';
+        } else {
+          adminAnnFileStatus.innerText = '已輸入外部圖片網址';
+        }
+      } else {
+        adminAnnImagePreview.src = '';
+        adminAnnImagePreviewWrap.classList.add('hidden');
+        adminAnnClearImageBtn.classList.add('hidden');
+        adminAnnFileStatus.innerText = '尚未選擇本機檔案';
+      }
+    }
+
+    function compressLocalImageToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('讀取檔案失敗'));
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onerror = () => reject(new Error('無法解析圖片格式'));
+          img.onload = () => {
+            const maxDim = 900;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // 若為 PNG 貼圖且尺寸不大，嘗試保留透明背景；否則轉為高畫質 JPEG 確保檔案輕量不超過 Firestore 1MB 上限
+            let dataUrl = '';
+            if (file.type === 'image/png') {
+              dataUrl = canvas.toDataURL('image/png');
+              if (dataUrl.length > 450000) {
+                dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+              }
+            } else {
+              dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+            }
+            resolve(dataUrl);
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    adminAnnImageFile.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        alert('請選擇圖片格式的檔案（如 JPG、PNG、WEBP、GIF）！');
+        return;
+      }
+
+      adminAnnFileStatus.innerText = '正在讀取並最佳化圖片...';
+      try {
+        const compressedDataUrl = await compressLocalImageToDataUrl(file);
+        adminAnnImageUrl.value = compressedDataUrl;
+        updateAdminImagePreview(compressedDataUrl, `已選取：${file.name}`);
+      } catch (err) {
+        console.error(err);
+        alert('讀取本機圖片失敗，請確認檔案是否損毀或換一張圖片試試！');
+        adminAnnFileStatus.innerText = '讀取失敗';
+      } finally {
+        adminAnnImageFile.value = '';
+      }
     });
-    topAnnouncementSummary.addEventListener('click', () => {
-      renderPublicAnnouncementUI();
-      publicAnnouncementModal.classList.remove('hidden');
+
+    adminAnnImageUrl.addEventListener('input', () => {
+      updateAdminImagePreview(adminAnnImageUrl.value);
     });
-    closePublicAnnouncementBtn.addEventListener('click', () => publicAnnouncementModal.classList.add('hidden'));
-    confirmPublicAnnouncementBtn.addEventListener('click', () => publicAnnouncementModal.classList.add('hidden'));
+
+    adminAnnClearImageBtn.addEventListener('click', () => {
+      adminAnnImageUrl.value = '';
+      adminAnnImageFile.value = '';
+      updateAdminImagePreview('');
+    });
 
     // 管理者打開「公告與倒數設定」Modal
     openBoardManageBtn.addEventListener('click', () => {
@@ -1466,6 +1641,7 @@
       adminAnnTitle.value = ann.title || '';
       adminAnnContent.value = ann.content || '';
       adminAnnImageUrl.value = ann.imageUrl || '';
+      updateAdminImagePreview(ann.imageUrl || '');
       adminAnnShowCoaches.checked = ann.showCoaches !== false;
 
       // 渲染貼圖選擇器
@@ -1475,7 +1651,7 @@
         btn.type = 'button';
         btn.className = 'px-2 py-1 bg-slate-50 hover:bg-sky-100 border border-slate-200 hover:border-sky-400 rounded-lg text-xs flex items-center gap-1 transition';
         btn.innerHTML = `<span class="text-base">${st.icon}</span><span class="text-[11px] font-medium text-slate-700">${st.label}</span>`;
-        btn.title = '左鍵設為主貼圖，同時可複製貼圖符號';
+        btn.title = '左鍵設為主貼圖，同時可插入內文';
         btn.addEventListener('click', () => {
           adminAnnSticker.value = st.icon;
           adminAnnContent.value = `${adminAnnContent.value}${adminAnnContent.value && !adminAnnContent.value.endsWith(' ') ? ' ' : ''}${st.icon}`;
@@ -1513,7 +1689,7 @@
     closeBoardManageBtn.addEventListener('click', () => boardManageModal.classList.add('hidden'));
     cancelBoardManageBtn.addEventListener('click', () => boardManageModal.classList.add('hidden'));
 
-    saveBoardManageBtn.addEventListener('click', () => {
+    saveBoardManageBtn.addEventListener('click', async () => {
       if (!isAdminLoggedIn) return;
 
       const now = new Date();
@@ -1553,7 +1729,7 @@
       });
 
       saveCoachData();
-      saveBoardSettings();
+      await saveBoardSettings();
       renderPublicAnnouncementUI();
       startCountdownLoop();
 

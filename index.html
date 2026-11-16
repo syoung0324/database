@@ -72,6 +72,53 @@
       display: inline-block;
       animation: floatSticker 2.6s ease-in-out infinite;
     }
+
+    /* 公告編輯器 placeholder 與樣式 */
+    #admin-ann-content-editor:empty:before {
+      content: attr(data-placeholder);
+      color: #94a3b8;
+      pointer-events: none;
+    }
+    #admin-ann-content-editor {
+      min-height: 96px;
+      max-height: 220px;
+      overflow-y: auto;
+      word-break: break-word;
+    }
+
+    /* 圖片拖拉縮放控制點 */
+    .resize-handle-se {
+      position: absolute;
+      right: -7px;
+      bottom: -7px;
+      width: 18px;
+      height: 18px;
+      background: #0284c7;
+      border: 2px solid #ffffff;
+      border-radius: 9999px;
+      cursor: nwse-resize;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 15;
+      touch-action: none;
+    }
+    .resize-handle-e {
+      position: absolute;
+      right: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 12px;
+      height: 28px;
+      background: #0284c7;
+      border: 2px solid #ffffff;
+      border-radius: 9999px;
+      cursor: ew-resize;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+      z-index: 15;
+      touch-action: none;
+    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen h-screen flex flex-col overflow-hidden">
@@ -274,17 +321,19 @@
           </div>
         </div>
 
-        <!-- 公告內文與貼圖展示 -->
-        <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm space-y-2.5">
+        <!-- 公告內文與貼圖展示（支援自訂文字大小/顏色 + 圖片大小/重新排版） -->
+        <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm space-y-3">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2">
             <span class="text-xs font-extrabold text-sky-800 flex items-center gap-1.5">
               <i class="fa-solid fa-message"></i> 公告內容說明
             </span>
             <span id="modal-announcement-updated" class="text-[11px] text-slate-400 font-mono"></span>
           </div>
-          <div id="modal-announcement-body" class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line"></div>
-          <div id="modal-announcement-image-wrap" class="hidden pt-2">
-            <img id="modal-announcement-image" src="" alt="公告貼圖" class="max-h-56 rounded-lg border border-slate-200 mx-auto object-contain shadow-sm">
+          <div id="modal-announcement-content-layout" class="flex flex-col gap-3">
+            <div id="modal-announcement-body" class="text-slate-700 leading-relaxed whitespace-pre-line break-words flex-1 min-w-0"></div>
+            <div id="modal-announcement-image-wrap" class="hidden shrink-0 max-w-full">
+              <img id="modal-announcement-image" src="" alt="公告貼圖" class="rounded-lg border border-slate-200 object-contain shadow-sm max-w-full h-auto">
+            </div>
           </div>
         </div>
 
@@ -397,15 +446,70 @@
             </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">公告詳細內文</label>
-            <textarea id="admin-ann-content" rows="3" placeholder="輸入公告說明文字..." class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500 leading-relaxed"></textarea>
+          <!-- 公告詳細內文（支援文字大小、顏色、粗體、底線、螢光標記） -->
+          <div class="space-y-1.5">
+            <div class="flex flex-wrap items-center justify-between gap-1">
+              <label class="block text-xs font-bold text-slate-700">
+                公告詳細內文 <span class="text-[11px] text-slate-400 font-normal">(可調整整段或反白選取局部文字的大小與顏色)</span>
+              </label>
+            </div>
+
+            <!-- 文字編輯工具列 -->
+            <div class="flex flex-wrap items-center gap-1.5 bg-white p-2 rounded-t-lg border border-b-0 border-slate-300 text-xs">
+              <!-- 文字大小 -->
+              <div class="flex items-center gap-1 bg-slate-50 px-1.5 py-1 rounded border border-slate-200">
+                <i class="fa-solid fa-text-height text-slate-500 text-[11px]"></i>
+                <select id="ann-font-size-select" class="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer" title="設定預設或選取文字的大小">
+                  <option value="12px">12px (小)</option>
+                  <option value="14px" selected>14px (標準)</option>
+                  <option value="16px">16px (中大)</option>
+                  <option value="18px">18px (大)</option>
+                  <option value="22px">22px (特大)</option>
+                  <option value="26px">26px (醒目標題)</option>
+                </select>
+              </div>
+
+              <!-- 常用文字顏色色票 -->
+              <div class="flex items-center gap-1 bg-slate-50 px-1.5 py-1 rounded border border-slate-200" title="點選變更文字顏色（有反白則套用選取文字，未反白則套用整段）">
+                <span class="text-[11px] font-bold text-slate-500 mr-0.5">字色:</span>
+                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#334155" data-color="#334155" title="深灰(預設)"></button>
+                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#dc2626" data-color="#dc2626" title="醒目紅"></button>
+                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#ea580c" data-color="#ea580c" title="活力橘"></button>
+                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#ca8a04" data-color="#ca8a04" title="琥珀金"></button>
+                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#059669" data-color="#059669" title="翠綠色"></button>
+                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#2563eb" data-color="#2563eb" title="寶藍色"></button>
+                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#7c3aed" data-color="#7c3aed" title="靛紫色"></button>
+                <label class="cursor-pointer flex items-center ml-0.5 text-[11px] text-sky-700 font-bold hover:text-sky-900" title="自訂文字顏色">
+                  <i class="fa-solid fa-palette"></i>
+                  <input type="color" id="ann-custom-color-picker" value="#334155" class="w-0 h-0 opacity-0 absolute">
+                </label>
+              </div>
+
+              <!-- 粗體 / 底線 / 螢光標記 / 清除格式 -->
+              <div class="flex items-center gap-1">
+                <button type="button" id="ann-bold-btn" class="px-2 py-1 bg-slate-50 hover:bg-sky-100 border border-slate-200 rounded font-black text-slate-700 transition" title="粗體 (選取文字)">
+                  B
+                </button>
+                <button type="button" id="ann-underline-btn" class="px-2 py-1 bg-slate-50 hover:bg-sky-100 border border-slate-200 rounded underline text-slate-700 transition" title="底線 (選取文字)">
+                  U
+                </button>
+                <button type="button" id="ann-highlight-btn" class="px-2 py-1 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded font-bold text-amber-900 transition" title="螢光黃底標記 (選取文字)">
+                  <i class="fa-solid fa-highlighter text-[11px]"></i>
+                </button>
+                <button type="button" id="ann-clear-format-btn" class="px-2 py-1 bg-slate-50 hover:bg-rose-100 border border-slate-200 rounded text-slate-600 hover:text-rose-700 transition" title="重設為標準大小與深灰字色">
+                  <i class="fa-solid fa-eraser text-[11px]"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- 富文本編輯框 -->
+            <div id="admin-ann-content-editor" contenteditable="true" data-placeholder="輸入公告說明文字..." class="w-full p-2.5 bg-white border border-slate-300 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-sky-500 leading-relaxed whitespace-pre-wrap" style="font-size: 14px; color: #334155;"></div>
           </div>
 
-          <!-- 附加貼圖 / 海報圖片：支援直接讀取本機端檔案 + 即時預覽 -->
-          <div class="space-y-2">
+          <!-- 附加貼圖 / 海報圖片：支援本機檔案 + 拖拉放大縮小 + 重新排版 -->
+          <div class="space-y-2.5 pt-1 border-t border-sky-200/80">
             <label class="block text-xs font-bold text-slate-700">
-              附加貼圖 / 海報圖片 <span class="text-slate-400 font-normal">(選填，可直接選取本機圖片檔案或貼上網址)</span>
+              附加貼圖 / 海報圖片 <span class="text-slate-400 font-normal">(選填，上傳後可直接拖拉縮放大小並調整排版位置)</span>
             </label>
             <div class="flex flex-wrap items-center gap-2">
               <label class="cursor-pointer bg-sky-600 hover:bg-sky-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition shadow-sm flex items-center gap-1.5 shrink-0">
@@ -419,8 +523,63 @@
               </button>
             </div>
             <input type="text" id="admin-ann-image-url" placeholder="或貼上外部圖片網址 (https://...)" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono">
-            <div id="admin-ann-image-preview-wrap" class="hidden bg-white p-2.5 rounded-lg border border-slate-200 text-center">
-              <img id="admin-ann-image-preview" src="" alt="圖片預覽" class="max-h-40 mx-auto rounded object-contain shadow-sm">
+            
+            <!-- 圖片排版與拖拉放大縮小操作區 -->
+            <div id="admin-ann-image-preview-wrap" class="hidden bg-white p-3 rounded-xl border border-slate-200 space-y-3 shadow-inner">
+              <!-- 排版位置與對齊控制列 -->
+              <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100 text-xs">
+                <div class="flex flex-wrap items-center gap-1">
+                  <span class="font-bold text-slate-700 mr-1"><i class="fa-solid fa-table-columns text-sky-600 mr-1"></i>圖文排版:</span>
+                  <button type="button" class="ann-layout-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-layout="bottom" title="文字在上方，圖片在下方">
+                    <i class="fa-solid fa-arrow-down mr-0.5"></i>圖在下方
+                  </button>
+                  <button type="button" class="ann-layout-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-layout="top" title="圖片在上方，文字在下方">
+                    <i class="fa-solid fa-arrow-up mr-0.5"></i>圖在上方
+                  </button>
+                  <button type="button" class="ann-layout-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-layout="left" title="圖片在左側，文字在右側">
+                    <i class="fa-solid fa-arrow-left mr-0.5"></i>圖左文右
+                  </button>
+                  <button type="button" class="ann-layout-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-layout="right" title="文字在左側，圖片在右側">
+                    <i class="fa-solid fa-arrow-right mr-0.5"></i>文左圖右
+                  </button>
+                </div>
+
+                <!-- 對齊方式（上下排版時適用） -->
+                <div id="ann-align-controls" class="flex items-center gap-1">
+                  <span class="text-[11px] text-slate-500">對齊:</span>
+                  <button type="button" class="ann-align-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-align="left" title="靠左對齊">
+                    <i class="fa-solid fa-align-left"></i>
+                  </button>
+                  <button type="button" class="ann-align-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-align="center" title="置中對齊">
+                    <i class="fa-solid fa-align-center"></i>
+                  </button>
+                  <button type="button" class="ann-align-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-align="right" title="靠右對齊">
+                    <i class="fa-solid fa-align-right"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 圖片尺寸滑桿與重設 -->
+              <div class="flex flex-wrap items-center gap-2 text-xs bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
+                <span class="font-bold text-slate-700 shrink-0"><i class="fa-solid fa-up-right-and-down-left-from-center text-sky-600 mr-1"></i>拖拉或滑桿調整大小:</span>
+                <input type="range" id="admin-ann-img-width-slider" min="80" max="560" value="240" class="flex-1 min-w-[100px] accent-sky-600 cursor-pointer">
+                <span id="admin-ann-img-size-badge" class="font-mono font-bold text-sky-800 bg-sky-100 px-2 py-0.5 rounded text-[11px] shrink-0">240 px</span>
+                <button type="button" id="admin-ann-img-reset-size-btn" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 px-2 py-0.5 rounded font-bold transition shrink-0">
+                  重設大小
+                </button>
+              </div>
+
+              <!-- 可直接拖拉放大縮小的預覽框 -->
+              <div id="admin-ann-preview-stage" class="bg-slate-100/80 border border-dashed border-slate-300 rounded-lg p-3 overflow-x-auto flex justify-center">
+                <div id="admin-ann-resizable-box" class="relative inline-block border-2 border-sky-500/80 rounded-lg bg-white shadow-sm select-none" style="width: 240px; max-width: 100%;">
+                  <img id="admin-ann-image-preview" src="" alt="圖片預覽" class="w-full h-auto rounded-md block pointer-events-none">
+                  <div id="admin-ann-resize-handle-e" class="resize-handle-e" title="左右拖拉調整寬度"></div>
+                  <div id="admin-ann-resize-handle-se" class="resize-handle-se" title="拖拉角落放大或縮小圖片">
+                    <i class="fa-solid fa-up-right-and-down-left-from-center text-[8px] text-white"></i>
+                  </div>
+                </div>
+              </div>
+              <p class="text-[11px] text-slate-500 text-center">提示：直接拖拉圖片右側或右下角藍色圓點即可自由放大縮小</p>
             </div>
           </div>
         </div>
@@ -920,7 +1079,13 @@
         title: '歡迎來到羽球場預約與練習統計系統！',
         sticker: '🏸',
         content: '1. 請學員提前 10 分鐘到場完成暖身與裝備檢查。\n2. 如需調整個人練習時段，請提前聯繫指導教練或管理員。\n3. 歡迎點擊下方教練卡片認識我們的教練團！',
+        contentHtml: '',
+        contentFontSize: '14px',
+        contentColor: '#334155',
         imageUrl: '',
+        imageWidth: 240,
+        imageLayout: 'bottom',
+        imageAlign: 'center',
         showCoaches: true,
         updatedAt: ''
       },
@@ -1209,6 +1374,7 @@
     const modalAnnouncementSticker = document.getElementById('modal-announcement-sticker');
     const modalAnnouncementTitle = document.getElementById('modal-announcement-title');
     const modalAnnouncementUpdated = document.getElementById('modal-announcement-updated');
+    const modalAnnouncementContentLayout = document.getElementById('modal-announcement-content-layout');
     const modalAnnouncementBody = document.getElementById('modal-announcement-body');
     const modalAnnouncementImageWrap = document.getElementById('modal-announcement-image-wrap');
     const modalAnnouncementImage = document.getElementById('modal-announcement-image');
@@ -1233,15 +1399,38 @@
     const adminAnnSticker = document.getElementById('admin-ann-sticker');
     const adminAnnTitle = document.getElementById('admin-ann-title');
     const stickerPickerGrid = document.getElementById('sticker-picker-grid');
-    const adminAnnContent = document.getElementById('admin-ann-content');
+
+    // 富文本編輯器相關 DOM
+    const adminAnnContentEditor = document.getElementById('admin-ann-content-editor');
+    const annFontSizeSelect = document.getElementById('ann-font-size-select');
+    const annCustomColorPicker = document.getElementById('ann-custom-color-picker');
+    const annBoldBtn = document.getElementById('ann-bold-btn');
+    const annUnderlineBtn = document.getElementById('ann-underline-btn');
+    const annHighlightBtn = document.getElementById('ann-highlight-btn');
+    const annClearFormatBtn = document.getElementById('ann-clear-format-btn');
+
+    // 圖片上傳、縮放與排版 DOM
     const adminAnnImageFile = document.getElementById('admin-ann-image-file');
     const adminAnnFileStatus = document.getElementById('admin-ann-file-status');
     const adminAnnClearImageBtn = document.getElementById('admin-ann-clear-image-btn');
     const adminAnnImageUrl = document.getElementById('admin-ann-image-url');
     const adminAnnImagePreviewWrap = document.getElementById('admin-ann-image-preview-wrap');
     const adminAnnImagePreview = document.getElementById('admin-ann-image-preview');
+    const adminAnnResizableBox = document.getElementById('admin-ann-resizable-box');
+    const adminAnnResizeHandleSe = document.getElementById('admin-ann-resize-handle-se');
+    const adminAnnResizeHandleE = document.getElementById('admin-ann-resize-handle-e');
+    const adminAnnImgWidthSlider = document.getElementById('admin-ann-img-width-slider');
+    const adminAnnImgSizeBadge = document.getElementById('admin-ann-img-size-badge');
+    const adminAnnImgResetSizeBtn = document.getElementById('admin-ann-img-reset-size-btn');
+    const annAlignControls = document.getElementById('ann-align-controls');
+
     const adminAnnShowCoaches = document.getElementById('admin-ann-show-coaches');
     const adminCoachProfilesList = document.getElementById('admin-coach-profiles-list');
+
+    // 管理者圖片編輯暫存狀態
+    let currentAdminImageWidth = 240;
+    let currentAdminImageLayout = 'bottom'; // 'bottom' | 'top' | 'left' | 'right'
+    let currentAdminImageAlign = 'center';  // 'left' | 'center' | 'right'
 
     const openQuickParseBtn = document.getElementById('open-quick-parse-btn');
     const quickParseModal = document.getElementById('quick-parse-modal');
@@ -1348,11 +1537,254 @@
     const modalSlotsSummary = document.getElementById('modal-slots-summary');
 
     // ==========================================
+    // ✍️ 公告富文本工具列（文字大小、顏色、格式）
+    // ==========================================
+    function sanitizeAnnouncementHtml(html) {
+      if (!html) return '';
+      const temp = document.createElement('div');
+      temp.innerHTML = html;
+      temp.querySelectorAll('script, iframe, object, embed, link, style').forEach(el => el.remove());
+      temp.querySelectorAll('*').forEach(el => {
+        [...el.attributes].forEach(attr => {
+          const name = attr.name.toLowerCase();
+          if (name.startsWith('on') || (name === 'href' && attr.value.trim().toLowerCase().startsWith('javascript:'))) {
+            el.removeAttribute(attr.name);
+          }
+        });
+      });
+      return temp.innerHTML;
+    }
+
+    function escapeHtmlText(text) {
+      return (text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function hasActiveEditorSelection() {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return false;
+      const range = sel.getRangeAt(0);
+      return adminAnnContentEditor.contains(range.commonAncestorContainer);
+    }
+
+    function wrapSelectionWithSpanStyle(styleObj) {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return false;
+      const range = sel.getRangeAt(0);
+      if (!adminAnnContentEditor.contains(range.commonAncestorContainer)) return false;
+
+      const span = document.createElement('span');
+      Object.entries(styleObj).forEach(([k, v]) => {
+        span.style[k] = v;
+      });
+      try {
+        const fragment = range.extractContents();
+        span.appendChild(fragment);
+        range.insertNode(span);
+        sel.removeAllRanges();
+        const newRange = document.createRange();
+        newRange.selectNodeContents(span);
+        sel.addRange(newRange);
+        return true;
+      } catch (e) {
+        console.warn('選取套用樣式失敗:', e);
+        return false;
+      }
+    }
+
+    annFontSizeSelect.addEventListener('change', () => {
+      const chosenSize = annFontSizeSelect.value;
+      if (hasActiveEditorSelection()) {
+        wrapSelectionWithSpanStyle({ fontSize: chosenSize });
+      } else {
+        adminAnnContentEditor.style.fontSize = chosenSize;
+      }
+      adminAnnContentEditor.focus();
+    });
+
+    function applyTextColorChoice(hexColor) {
+      annCustomColorPicker.value = hexColor;
+      if (hasActiveEditorSelection()) {
+        wrapSelectionWithSpanStyle({ color: hexColor });
+      } else {
+        adminAnnContentEditor.style.color = hexColor;
+      }
+      adminAnnContentEditor.focus();
+    }
+
+    document.querySelectorAll('.ann-color-swatch').forEach(btn => {
+      btn.addEventListener('mousedown', (e) => {
+        e.preventDefault(); // 保留編輯器內的文字選取狀態
+        applyTextColorChoice(btn.dataset.color);
+      });
+    });
+
+    annCustomColorPicker.addEventListener('input', (e) => {
+      applyTextColorChoice(e.target.value);
+    });
+
+    annBoldBtn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (hasActiveEditorSelection()) {
+        document.execCommand('bold', false, null);
+      } else {
+        const isBold = adminAnnContentEditor.style.fontWeight === '700';
+        adminAnnContentEditor.style.fontWeight = isBold ? '400' : '700';
+      }
+      adminAnnContentEditor.focus();
+    });
+
+    annUnderlineBtn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (hasActiveEditorSelection()) {
+        document.execCommand('underline', false, null);
+      }
+      adminAnnContentEditor.focus();
+    });
+
+    annHighlightBtn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (hasActiveEditorSelection()) {
+        wrapSelectionWithSpanStyle({ backgroundColor: '#fef08a', padding: '0 2px', borderRadius: '3px' });
+      }
+      adminAnnContentEditor.focus();
+    });
+
+    annClearFormatBtn.addEventListener('click', () => {
+      const plain = adminAnnContentEditor.innerText;
+      adminAnnContentEditor.innerHTML = escapeHtmlText(plain);
+      adminAnnContentEditor.style.fontSize = '14px';
+      adminAnnContentEditor.style.color = '#334155';
+      adminAnnContentEditor.style.fontWeight = '400';
+      annFontSizeSelect.value = '14px';
+      annCustomColorPicker.value = '#334155';
+      adminAnnContentEditor.focus();
+    });
+
+    // ==========================================
+    // 🖼️ 圖片拖拉放大縮小 & 重新排版控制
+    // ==========================================
+    function setAdminImageSize(pxWidth) {
+      const clamped = Math.max(80, Math.min(600, Math.round(Number(pxWidth) || 240)));
+      currentAdminImageWidth = clamped;
+      adminAnnResizableBox.style.width = `${clamped}px`;
+      adminAnnImgWidthSlider.value = Math.min(560, clamped);
+      adminAnnImgSizeBadge.innerText = `${clamped} px`;
+    }
+
+    function updateAdminLayoutAndAlignUI() {
+      document.querySelectorAll('.ann-layout-btn').forEach(btn => {
+        const active = btn.dataset.layout === currentAdminImageLayout;
+        btn.className = `ann-layout-btn px-2 py-1 rounded border text-[11px] font-bold transition ${
+          active
+            ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
+            : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-300'
+        }`;
+      });
+
+      document.querySelectorAll('.ann-align-btn').forEach(btn => {
+        const active = btn.dataset.align === currentAdminImageAlign;
+        btn.className = `ann-align-btn px-2 py-1 rounded border text-[11px] font-bold transition ${
+          active
+            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+            : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-300'
+        }`;
+      });
+
+      if (currentAdminImageLayout === 'left' || currentAdminImageLayout === 'right') {
+        annAlignControls.classList.add('opacity-40', 'pointer-events-none');
+      } else {
+        annAlignControls.classList.remove('opacity-40', 'pointer-events-none');
+      }
+    }
+
+    document.querySelectorAll('.ann-layout-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentAdminImageLayout = btn.dataset.layout;
+        updateAdminLayoutAndAlignUI();
+      });
+    });
+
+    document.querySelectorAll('.ann-align-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentAdminImageAlign = btn.dataset.align;
+        updateAdminLayoutAndAlignUI();
+      });
+    });
+
+    adminAnnImgWidthSlider.addEventListener('input', (e) => {
+      setAdminImageSize(e.target.value);
+    });
+
+    adminAnnImgResetSizeBtn.addEventListener('click', () => {
+      setAdminImageSize(240);
+    });
+
+    // 綁定滑鼠與觸控拖拉縮放事件
+    function bindDragResizeHandle(handleEl) {
+      let isResizing = false;
+      let startX = 0;
+      let startWidth = 240;
+
+      const onStart = (clientX) => {
+        isResizing = true;
+        startX = clientX;
+        startWidth = adminAnnResizableBox.getBoundingClientRect().width || currentAdminImageWidth;
+        document.body.style.userSelect = 'none';
+      };
+
+      const onMove = (clientX) => {
+        if (!isResizing) return;
+        const deltaX = clientX - startX;
+        setAdminImageSize(startWidth + deltaX);
+      };
+
+      const onEnd = () => {
+        if (!isResizing) return;
+        isResizing = false;
+        document.body.style.userSelect = '';
+      };
+
+      handleEl.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onStart(e.clientX);
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (isResizing) onMove(e.clientX);
+      });
+
+      window.addEventListener('mouseup', onEnd);
+
+      handleEl.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches[0]) {
+          e.preventDefault();
+          e.stopPropagation();
+          onStart(e.touches[0].clientX);
+        }
+      }, { passive: false });
+
+      window.addEventListener('touchmove', (e) => {
+        if (isResizing && e.touches && e.touches[0]) {
+          onMove(e.touches[0].clientX);
+        }
+      }, { passive: true });
+
+      window.addEventListener('touchend', onEnd);
+    }
+
+    bindDragResizeHandle(adminAnnResizeHandleSe);
+    bindDragResizeHandle(adminAnnResizeHandleE);
+
+    // ==========================================
     // 📢 公告系統、教練簡介與倒數計時器邏輯
     // ==========================================
     function getAnnouncementSignature(ann) {
       if (!ann) return '';
-      const raw = `${ann.title || ''}||${ann.sticker || ''}||${ann.content || ''}||${ann.imageUrl || ''}`;
+      const raw = `${ann.title || ''}||${ann.sticker || ''}||${ann.contentHtml || ann.content || ''}||${ann.imageUrl || ''}||${ann.imageWidth || ''}||${ann.imageLayout || ''}`;
       let hash = 0;
       for (let i = 0; i < raw.length; i++) {
         const chr = raw.charCodeAt(i);
@@ -1416,11 +1848,46 @@
       modalAnnouncementSticker.innerText = ann.sticker || '🏸';
       modalAnnouncementTitle.innerText = ann.title || '球隊最新公告';
       modalAnnouncementUpdated.innerText = ann.updatedAt ? `更新時間：${ann.updatedAt}` : '';
-      modalAnnouncementBody.innerText = ann.content || '暫無公告內容。';
+
+      // 套用公告內文文字大小、顏色與富文本內容
+      modalAnnouncementBody.style.fontSize = ann.contentFontSize || '14px';
+      modalAnnouncementBody.style.color = ann.contentColor || '#334155';
+      if (ann.contentHtml && ann.contentHtml.trim() !== '') {
+        modalAnnouncementBody.innerHTML = sanitizeAnnouncementHtml(ann.contentHtml);
+      } else {
+        modalAnnouncementBody.innerText = ann.content || '暫無公告內容。';
+      }
+
+      // 套用附加貼圖 / 海報圖片尺寸與排版位置
+      const layout = ann.imageLayout || 'bottom';
+      const align = ann.imageAlign || 'center';
+      const imgWidth = Number(ann.imageWidth) || 240;
+
+      modalAnnouncementContentLayout.className = 'flex gap-3.5';
+      if (layout === 'top') {
+        modalAnnouncementContentLayout.classList.add('flex-col-reverse');
+      } else if (layout === 'left') {
+        modalAnnouncementContentLayout.classList.add('flex-col', 'sm:flex-row-reverse', 'sm:items-start');
+      } else if (layout === 'right') {
+        modalAnnouncementContentLayout.classList.add('flex-col', 'sm:flex-row', 'sm:items-start');
+      } else {
+        modalAnnouncementContentLayout.classList.add('flex-col');
+      }
 
       if (ann.imageUrl && ann.imageUrl.trim() !== '') {
         modalAnnouncementImage.src = ann.imageUrl.trim();
+        modalAnnouncementImage.style.width = `${imgWidth}px`;
+        modalAnnouncementImage.style.maxWidth = '100%';
         modalAnnouncementImageWrap.classList.remove('hidden');
+
+        modalAnnouncementImageWrap.classList.remove('self-start', 'self-center', 'self-end');
+        if (layout === 'bottom' || layout === 'top') {
+          if (align === 'left') modalAnnouncementImageWrap.classList.add('self-start');
+          else if (align === 'right') modalAnnouncementImageWrap.classList.add('self-end');
+          else modalAnnouncementImageWrap.classList.add('self-center');
+        } else {
+          modalAnnouncementImageWrap.classList.add('self-center', 'sm:self-start');
+        }
       } else {
         modalAnnouncementImageWrap.classList.add('hidden');
       }
@@ -1527,6 +1994,8 @@
         adminAnnImagePreview.src = cleanSrc;
         adminAnnImagePreviewWrap.classList.remove('hidden');
         adminAnnClearImageBtn.classList.remove('hidden');
+        setAdminImageSize(currentAdminImageWidth);
+        updateAdminLayoutAndAlignUI();
         if (fileLabel) {
           adminAnnFileStatus.innerText = fileLabel;
         } else if (cleanSrc.startsWith('data:image/')) {
@@ -1633,7 +2102,26 @@
       adminAnnAutopopup.checked = ann.autoPopup !== false;
       adminAnnSticker.value = ann.sticker || '🏸';
       adminAnnTitle.value = ann.title || '';
-      adminAnnContent.value = ann.content || '';
+
+      // 載入富文本內容與預設文字大小、顏色
+      const baseFontSize = ann.contentFontSize || '14px';
+      const baseColor = ann.contentColor || '#334155';
+      adminAnnContentEditor.style.fontSize = baseFontSize;
+      adminAnnContentEditor.style.color = baseColor;
+      annFontSizeSelect.value = baseFontSize;
+      annCustomColorPicker.value = baseColor;
+
+      if (ann.contentHtml && ann.contentHtml.trim() !== '') {
+        adminAnnContentEditor.innerHTML = sanitizeAnnouncementHtml(ann.contentHtml);
+      } else {
+        adminAnnContentEditor.innerText = ann.content || '';
+      }
+
+      // 載入圖片尺寸與排版設定
+      currentAdminImageWidth = Number(ann.imageWidth) || 240;
+      currentAdminImageLayout = ann.imageLayout || 'bottom';
+      currentAdminImageAlign = ann.imageAlign || 'center';
+
       adminAnnImageUrl.value = ann.imageUrl || '';
       updateAdminImagePreview(ann.imageUrl || '');
       adminAnnShowCoaches.checked = ann.showCoaches !== false;
@@ -1647,7 +2135,8 @@
         btn.title = '左鍵設為主貼圖，同時可插入內文';
         btn.addEventListener('click', () => {
           adminAnnSticker.value = st.icon;
-          adminAnnContent.value = `${adminAnnContent.value}${adminAnnContent.value && !adminAnnContent.value.endsWith(' ') ? ' ' : ''}${st.icon}`;
+          adminAnnContentEditor.focus();
+          document.execCommand('insertText', false, ` ${st.icon}`);
         });
         stickerPickerGrid.appendChild(btn);
       });
@@ -1687,14 +2176,23 @@
       const now = new Date();
       const updatedTimeStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
+      const cleanHtml = sanitizeAnnouncementHtml(adminAnnContentEditor.innerHTML.trim());
+      const plainText = adminAnnContentEditor.innerText.trim();
+
       boardSettings = {
         announcement: {
           enabled: adminAnnEnabled.checked,
           autoPopup: adminAnnAutopopup.checked,
           sticker: adminAnnSticker.value.trim() || '🏸',
           title: adminAnnTitle.value.trim() || '球隊最新公告',
-          content: adminAnnContent.value.trim(),
+          content: plainText,
+          contentHtml: cleanHtml,
+          contentFontSize: adminAnnContentEditor.style.fontSize || annFontSizeSelect.value || '14px',
+          contentColor: adminAnnContentEditor.style.color || annCustomColorPicker.value || '#334155',
           imageUrl: adminAnnImageUrl.value.trim(),
+          imageWidth: currentAdminImageWidth,
+          imageLayout: currentAdminImageLayout,
+          imageAlign: currentAdminImageAlign,
           showCoaches: adminAnnShowCoaches.checked,
           updatedAt: updatedTimeStr
         },

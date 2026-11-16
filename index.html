@@ -84,7 +84,7 @@
       </div>
       <div class="min-w-0">
         <h1 class="font-bold text-xs sm:text-base leading-tight flex flex-wrap items-center gap-1.5">
-          <span class="truncate">羽球場預約統計系統</span>
+          <span>羽球場預約統計系統</span>
           <span id="mode-badge" class="text-[10px] bg-emerald-700/80 text-emerald-200 px-1.5 py-0.5 rounded font-normal border border-emerald-600 shrink-0">Excel 模式</span>
           <!-- 即時線上人數資訊欄 -->
           <span id="online-status-badge" class="text-[10px] sm:text-[11px] bg-emerald-950/80 text-lime-300 px-2 py-0.5 rounded-full font-bold border border-lime-400/50 flex items-center gap-1.5 shadow-inner shrink-0" title="目前正在線瀏覽此系統的人數">
@@ -101,7 +101,6 @@
 
     <!-- Right Controls -->
     <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
-      <!-- 一般使用者與管理者皆可隨時重開公告與教練簡介 -->
       <button id="open-public-announcement-btn" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-extrabold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1 shrink-0">
         <i class="fa-solid fa-bullhorn"></i>
         <span>公告 / 教練簡介</span>
@@ -221,10 +220,10 @@
     </div>
   </div>
 
-  <!-- Main Excel / Mobile Grid Area (自動隨視窗螢幕調整大小) -->
+  <!-- Main Excel / Mobile Grid Area -->
   <main class="flex-1 overflow-auto grid-scroll p-2 sm:p-3 lg:p-4 pb-20 bg-slate-100 flex flex-col w-full">
     <div id="main-container" class="bg-white rounded-lg shadow-md border border-slate-300 overflow-x-auto flex-1 flex flex-col w-full">
-      <div id="grid-table" class="divide-y divide-slate-200 flex-1 flex flex-col w-full min-w-[780px] lg:min-w-0">
+      <div id="grid-table" class="divide-y divide-slate-200 flex-1 flex flex-col w-full min-w-[1420px] lg:min-w-0">
         <!-- JS Dynamic Table Construction -->
       </div>
     </div>
@@ -254,7 +253,7 @@
           <div id="modal-announcement-sticker" class="text-3xl sm:text-4xl bg-white/15 p-2 rounded-xl border border-white/20 shadow-inner sticker-bounce shrink-0">🏸</div>
           <div class="min-w-0">
             <span class="inline-block text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2 py-0.5 rounded mb-1">球隊公告 & 教練資訊</span>
-            <h3 id="modal-announcement-title" class="font-black text-base sm:text-lg leading-snug text-white truncate">歡迎來到羽球場預約統計系統！</h3>
+            <h3 id="modal-announcement-title" class="font-black text-base sm:text-lg leading-snug text-white">歡迎來到羽球場預約統計系統！</h3>
           </div>
         </div>
         <button id="close-public-announcement-btn" class="text-slate-200 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition shrink-0">
@@ -303,7 +302,7 @@
         </div>
       </div>
 
-      <!-- Footer：新增「下次開啟不再自動顯示此則公告」勾選框 -->
+      <!-- Footer：下次開啟不再自動顯示此則公告 -->
       <div class="p-3.5 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 shrink-0">
         <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer select-none hover:text-slate-950">
           <input type="checkbox" id="dont-show-same-ann-checkbox" class="w-4 h-4 accent-emerald-600 rounded cursor-pointer">
@@ -1151,6 +1150,7 @@
         
         nightOnlyCheckbox.checked = !!bookings[currentDate].nightOnly;
         hideDayCheckbox.checked = !!bookings[currentDate].hideAllSlots;
+        updateViewModeUI();
         renderGrid();
         updateEventBannerDisplay();
       }, (error) => {
@@ -1386,7 +1386,6 @@
       const ann = boardSettings.announcement || {};
       const cd = boardSettings.countdown || {};
 
-      // 頂部橫幅顯示控制（僅控制頂部公告列是否顯示，不影響彈出視窗）
       const showAnnBar = ann.enabled !== false;
       const showCdBar = cd.enabled !== false && !!cd.targetDateTime;
 
@@ -1414,7 +1413,6 @@
         modalCountdownCard.classList.add('hidden');
       }
 
-      // 彈出公告視窗內容填充
       modalAnnouncementSticker.innerText = ann.sticker || '🏸';
       modalAnnouncementTitle.innerText = ann.title || '球隊最新公告';
       modalAnnouncementUpdated.innerText = ann.updatedAt ? `更新時間：${ann.updatedAt}` : '';
@@ -1427,7 +1425,6 @@
         modalAnnouncementImageWrap.classList.add('hidden');
       }
 
-      // 教練團簡介卡片渲染
       if (ann.showCoaches !== false && coachList.length > 0) {
         modalCoachIntroSection.classList.remove('hidden');
         modalCoachCardsGrid.innerHTML = '';
@@ -1502,7 +1499,6 @@
     function maybeAutoOpenAnnouncementModal() {
       if (hasShownAutoPopupThisSession) return;
       const ann = boardSettings.announcement || {};
-      // 修正：只要「開啟網頁自動彈出視窗」(ann.autoPopup !== false) 有勾選，無論頂部公告列是否顯示，都會在剛進入網站時彈出
       if (ann.autoPopup !== false) {
         const currentSig = getAnnouncementSignature(ann);
         const dismissedSig = localStorage.getItem('badminton_dismissed_ann_sig');
@@ -1574,7 +1570,6 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
 
-            // 若為 PNG 貼圖且尺寸不大，嘗試保留透明背景；否則轉為高畫質 JPEG 確保檔案輕量不超過 Firestore 1MB 上限
             let dataUrl = '';
             if (file.type === 'image/png') {
               dataUrl = canvas.toDataURL('image/png');
@@ -1624,7 +1619,6 @@
       updateAdminImagePreview('');
     });
 
-    // 管理者打開「公告與倒數設定」Modal
     openBoardManageBtn.addEventListener('click', () => {
       if (!isAdminLoggedIn) return;
       const ann = boardSettings.announcement || {};
@@ -1644,7 +1638,6 @@
       updateAdminImagePreview(ann.imageUrl || '');
       adminAnnShowCoaches.checked = ann.showCoaches !== false;
 
-      // 渲染貼圖選擇器
       stickerPickerGrid.innerHTML = '';
       STICKER_CATALOG.forEach(st => {
         const btn = document.createElement('button');
@@ -1659,7 +1652,6 @@
         stickerPickerGrid.appendChild(btn);
       });
 
-      // 渲染教練簡介編輯列表
       adminCoachProfilesList.innerHTML = '';
       coachList.forEach((coach, idx) => {
         const row = document.createElement('div');
@@ -1714,7 +1706,6 @@
         }
       };
 
-      // 更新每位教練的簡介欄位
       adminCoachProfilesList.querySelectorAll('.admin-coach-avatar').forEach(inp => {
         const idx = Number(inp.dataset.idx);
         if (coachList[idx]) coachList[idx].avatar = inp.value.trim() || '🏸';
@@ -3069,10 +3060,12 @@
       }
       bookings[currentDate].nightOnly = e.target.checked;
       saveData();
+      updateViewModeUI();
       renderGrid();
     });
 
     function updateViewModeUI() {
+      const isNightOnly = bookings[currentDate] && bookings[currentDate].nightOnly;
       if (isMobileView) {
         modeIcon.className = 'fa-solid fa-desktop';
         modeText.innerText = '切換電腦模式';
@@ -3086,7 +3079,9 @@
         modeBadge.innerText = 'Excel 模式';
         modeBadge.className = 'text-[10px] bg-emerald-700/80 text-emerald-200 px-1.5 py-0.5 rounded font-normal border border-emerald-600 shrink-0';
         mainContainer.className = 'bg-white rounded-lg shadow-md border border-slate-300 overflow-x-auto flex-1 flex flex-col w-full';
-        gridTable.className = 'divide-y divide-slate-200 flex-1 flex flex-col w-full min-w-[780px] lg:min-w-0';
+        gridTable.className = isNightOnly
+          ? 'divide-y divide-slate-200 flex-1 flex flex-col w-full min-w-0'
+          : 'divide-y divide-slate-200 flex-1 flex flex-col w-full min-w-[1420px] lg:min-w-0';
       }
     }
 
@@ -3151,6 +3146,16 @@
       }
     }
 
+    function formatStudentNamesHtml(rawStudent) {
+      const text = (rawStudent || '').trim();
+      if (!text) return '';
+      if (text.includes('/')) {
+        const parts = text.split('/').map(s => s.trim()).filter(Boolean);
+        return parts.map((name, i) => i < parts.length - 1 ? `${name} /` : name).join('<br>');
+      }
+      return text;
+    }
+
     function renderGrid() {
       gridTable.innerHTML = '';
       const dayData = bookings[currentDate] || { eventTitle: '', nightOnly: false, hideAllSlots: false, slots: {} };
@@ -3203,17 +3208,17 @@
               } else if (booking.type === 'other') {
                 slotBg = 'bg-purple-50 hover:bg-purple-100/80';
                 statusText = `
-                  <div class="text-right">
+                  <div class="text-right break-words whitespace-normal leading-snug">
                     <span class="text-xs font-bold text-purple-900"><i class="fa-solid fa-bookmark mr-1 text-purple-600"></i>${booking.otherNote || '其他用途'}</span>
                   </div>
                 `;
               } else {
                 slotBg = 'bg-emerald-50 hover:bg-emerald-100/80';
-                const coachStr = booking.coach ? `<span class="text-emerald-800 font-normal ml-1">(${booking.coach})</span>` : '';
+                const coachStr = booking.coach ? `<span class="text-emerald-800 font-normal ml-1 inline-block">(${booking.coach})</span>` : '';
                 statusText = `
-                  <div class="text-right">
+                  <div class="text-right break-words whitespace-normal leading-snug">
                     <span class="text-xs font-bold text-emerald-900">${booking.student}</span>${coachStr}
-                    ${booking.timeNote ? `<div class="text-[10px] text-emerald-700 font-mono">${booking.timeNote}</div>` : ''}
+                    ${booking.timeNote ? `<div class="text-[11px] text-emerald-700 font-mono mt-0.5">${booking.timeNote}</div>` : ''}
                   </div>
                 `;
               }
@@ -3224,12 +3229,12 @@
             }
 
             cardSlotsHtml += `
-              <div class="px-3 py-2.5 flex items-center justify-between cursor-pointer transition ${slotBg}" data-key="${slotKey}">
-                <div class="flex items-center gap-2">
+              <div class="px-3 py-2.5 flex items-center justify-between gap-3 cursor-pointer transition ${slotBg}" data-key="${slotKey}">
+                <div class="flex items-center gap-1.5 shrink-0">
                   <div class="text-xs font-mono font-semibold text-slate-600">${time}</div>
                   ${isSelected ? `<i class="fa-solid fa-circle-check text-emerald-700 text-xs"></i>` : ''}
                 </div>
-                <div>${statusText}</div>
+                <div class="flex-1 min-w-0 flex justify-end">${statusText}</div>
               </div>
             `;
           });
@@ -3242,19 +3247,19 @@
         const headerRow = document.createElement('div');
         headerRow.className = 'flex bg-slate-100 text-slate-700 font-semibold border-b border-slate-300 sticky-header';
         
-        let headerHtml = `<div class="w-20 sm:w-24 xl:w-28 p-1.5 sm:p-2 text-center bg-slate-200 border-r border-slate-300 shrink-0 sticky-col font-black flex items-center justify-center text-xs sm:text-sm text-slate-800">場地 / 時間</div>`;
+        let headerHtml = `<div class="w-16 sm:w-24 xl:w-28 p-1.5 sm:p-2 text-center bg-slate-200 border-r border-slate-300 shrink-0 sticky-col font-black flex items-center justify-center text-xs sm:text-sm text-slate-800">場地 / 時間</div>`;
         activeSlots.forEach(({ time }) => {
           const shortTime = time.replace(' ~ ', '-');
-          headerHtml += `<div class="flex-1 min-w-[52px] p-1 sm:p-2 text-center border-r border-slate-200 text-[11px] sm:text-xs xl:text-sm font-black font-mono leading-tight text-slate-800 tracking-tight flex items-center justify-center">${shortTime}</div>`;
+          headerHtml += `<div class="flex-1 min-w-[96px] lg:min-w-0 p-1.5 sm:p-2 text-center border-r border-slate-200 text-xs sm:text-xs xl:text-sm font-black font-mono leading-tight text-slate-800 tracking-tight flex items-center justify-center">${shortTime}</div>`;
         });
         headerRow.innerHTML = headerHtml;
         gridTable.appendChild(headerRow);
 
         COURTS.forEach((courtName, cIdx) => {
           const row = document.createElement('div');
-          row.className = 'flex flex-1 border-b border-slate-200 hover:bg-slate-50/50 transition min-h-[50px]';
+          row.className = 'flex flex-1 border-b border-slate-200 hover:bg-slate-50/50 transition min-h-[68px]';
 
-          let rowHtml = `<div class="w-20 sm:w-24 xl:w-28 p-1.5 sm:p-2 text-center bg-slate-100 font-black text-slate-800 border-r border-slate-300 shrink-0 sticky-col flex items-center justify-center text-xs sm:text-sm xl:text-base">${courtName}</div>`;
+          let rowHtml = `<div class="w-16 sm:w-24 xl:w-28 p-1.5 sm:p-2 text-center bg-slate-100 font-black text-slate-800 border-r border-slate-300 shrink-0 sticky-col flex items-center justify-center text-xs sm:text-sm xl:text-base">${courtName}</div>`;
 
           activeSlots.forEach(({ time, originalIdx }) => {
             const slotKey = `${cIdx}_${originalIdx}`;
@@ -3267,24 +3272,25 @@
             if (booking) {
               if (booking.type === 'club') {
                 cellClass = 'bg-amber-100/90 hover:bg-amber-200/90 border-amber-300 text-amber-900 font-bold';
-                contentHtml = `<div class="text-[11px]">社團包場</div>`;
+                contentHtml = `<div class="text-xs leading-snug break-words whitespace-normal">社團包場</div>`;
               } else if (booking.type === 'other') {
                 cellClass = 'bg-purple-100/90 hover:bg-purple-200/90 border-purple-300 text-purple-900 font-bold';
                 contentHtml = `
-                  <div class="text-[11px] leading-tight truncate px-0.5">${booking.otherNote || '其他用途'}</div>
+                  <div class="text-xs leading-snug break-words whitespace-normal w-full">${booking.otherNote || '其他用途'}</div>
                 `;
               } else {
                 cellClass = 'bg-emerald-100/90 hover:bg-emerald-200/90 border-emerald-300 text-emerald-900';
-                const coachStr = booking.coach ? `<span class="text-[11px] xl:text-xs block opacity-90 text-emerald-800 font-normal truncate">(${booking.coach})</span>` : '';
+                const formattedStudent = formatStudentNamesHtml(booking.student);
+                const coachStr = booking.coach ? `<span class="text-[11px] xl:text-xs block opacity-90 text-emerald-800 font-normal leading-tight mt-0.5 break-words whitespace-normal">(${booking.coach})</span>` : '';
                 contentHtml = `
-                  <div class="font-bold text-xs xl:text-sm leading-tight truncate px-0.5 w-full">${booking.student}</div>
+                  <div class="font-bold text-xs xl:text-sm leading-snug break-words whitespace-normal w-full">${formattedStudent}</div>
                   ${coachStr}
-                  ${booking.timeNote ? `<div class="text-[10px] text-emerald-800 font-mono scale-95 leading-none mt-0.5">${booking.timeNote}</div>` : ''}
+                  ${booking.timeNote ? `<div class="text-[10px] text-emerald-800 font-mono leading-tight mt-0.5 break-words whitespace-normal">${booking.timeNote}</div>` : ''}
                 `;
               }
             } else {
               cellClass = 'bg-white hover:bg-slate-100 cursor-pointer';
-              contentHtml = `<div class="text-[11px] xl:text-xs text-slate-400 font-medium select-none">可預約</div>`;
+              contentHtml = `<div class="text-xs text-slate-400 font-medium select-none">可預約</div>`;
             }
 
             if (isSelected) {
@@ -3292,9 +3298,9 @@
             }
 
             rowHtml += `
-              <div class="flex-1 min-w-[52px] p-1 border-r border-slate-200 flex flex-col justify-center items-center text-center transition relative overflow-hidden ${cellClass}" data-key="${slotKey}">
+              <div class="flex-1 min-w-[96px] lg:min-w-0 px-1.5 py-2 border-r border-slate-200 flex flex-col justify-center items-center text-center transition relative ${cellClass}" data-key="${slotKey}">
                 ${contentHtml}
-                ${isSelected ? `<i class="fa-solid fa-circle-check absolute top-0.5 right-0.5 text-emerald-700 text-[10px]"></i>` : ''}
+                ${isSelected ? `<i class="fa-solid fa-circle-check absolute top-1 right-1 text-emerald-700 text-[10px]"></i>` : ''}
               </div>
             `;
           });

@@ -13,7 +13,7 @@
   <!-- Firebase SDK (Modular) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAtBfUkMGlHPkLNv41Mfz9IXRMu9xm5kgk",
@@ -31,13 +31,15 @@
     window.fsDoc = doc;
     window.fsGetDoc = getDoc;
     window.fsSetDoc = setDoc;
+    window.fsDeleteDoc = deleteDoc;
+    window.fsCollection = collection;
     window.fsOnSnapshot = onSnapshot;
 
     window.dispatchEvent(new Event('firebase-init'));
   </script>
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
     body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
     
     .grid-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
@@ -50,8 +52,8 @@
 
     /* 內嵌區塊內部的往返彈性跑馬燈 */
     @keyframes bounceMarquee {
-      0% { transform: translateX(10%); }
-      100% { transform: translateX(-10%); }
+      0% { transform: translateX(8%); }
+      100% { transform: translateX(-8%); }
     }
     .animate-marquee {
       display: inline-block;
@@ -61,27 +63,50 @@
     .animate-marquee:hover {
       animation-play-state: paused;
     }
+
+    @keyframes floatSticker {
+      0%, 100% { transform: translateY(0px) rotate(-2deg); }
+      50% { transform: translateY(-4px) rotate(2deg); }
+    }
+    .sticker-bounce {
+      display: inline-block;
+      animation: floatSticker 2.6s ease-in-out infinite;
+    }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 h-screen flex flex-col overflow-hidden">
+<body class="bg-slate-100 text-slate-800 min-h-screen h-screen flex flex-col overflow-hidden">
 
   <!-- Header -->
-  <header class="bg-emerald-800 text-white px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between shadow-md shrink-0 gap-2">
-    <div class="flex items-center space-x-2.5">
+  <header class="bg-emerald-800 text-white px-2.5 sm:px-4 py-2 flex flex-wrap items-center justify-between shadow-md shrink-0 gap-2">
+    <div class="flex items-center space-x-2 sm:space-x-2.5 min-w-0">
       <div class="bg-emerald-600 p-1.5 rounded-lg flex items-center justify-center shrink-0">
-        <i class="fa-solid fa-table text-lg text-emerald-100"></i>
+        <i class="fa-solid fa-table text-base sm:text-lg text-emerald-100"></i>
       </div>
-      <div>
-        <h1 class="font-bold text-sm sm:text-base leading-tight flex items-center gap-1.5">
-          <span>羽球場預約統計系統</span>
-          <span id="mode-badge" class="text-[10px] bg-emerald-700/80 text-emerald-200 px-1.5 py-0.5 rounded font-normal border border-emerald-600">Excel 模式</span>
+      <div class="min-w-0">
+        <h1 class="font-bold text-xs sm:text-base leading-tight flex flex-wrap items-center gap-1.5">
+          <span class="truncate">羽球場預約統計系統</span>
+          <span id="mode-badge" class="text-[10px] bg-emerald-700/80 text-emerald-200 px-1.5 py-0.5 rounded font-normal border border-emerald-600 shrink-0">Excel 模式</span>
+          <!-- 即時線上人數資訊欄 -->
+          <span id="online-status-badge" class="text-[10px] sm:text-[11px] bg-emerald-950/80 text-lime-300 px-2 py-0.5 rounded-full font-bold border border-lime-400/50 flex items-center gap-1.5 shadow-inner shrink-0" title="目前正在線瀏覽此系統的人數">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-lime-400"></span>
+            </span>
+            <span>目前線上：<b id="online-user-count" class="font-mono text-white">1</b> 人</span>
+          </span>
         </h1>
-        <p class="text-[10px] sm:text-[11px] text-emerald-200">格式對齊：Y 軸場地 / X 軸時間段</p>
+        <p class="hidden sm:block text-[11px] text-emerald-200">自動適應視窗大小｜Y 軸場地 / X 軸時間段</p>
       </div>
     </div>
 
     <!-- Right Controls -->
-    <div class="flex items-center space-x-1.5 sm:space-x-2 text-xs">
+    <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
+      <!-- 一般使用者與管理者皆可隨時重開公告與教練簡介 -->
+      <button id="open-public-announcement-btn" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-extrabold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1 shrink-0">
+        <i class="fa-solid fa-bullhorn"></i>
+        <span>公告 / 教練簡介</span>
+      </button>
+
       <button id="admin-login-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1 shrink-0">
         <i class="fa-solid fa-lock" id="admin-lock-icon"></i>
         <span id="admin-btn-text">管理員登入</span>
@@ -112,28 +137,52 @@
     </div>
   </header>
 
+  <!-- 公開公告摘要與倒數計時器即時資訊列 (一般使用者一開啟網頁即可見) -->
+  <div id="public-top-notice-bar" class="bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 text-white px-2.5 sm:px-4 py-1.5 border-b border-sky-800/80 flex flex-wrap items-center justify-between gap-2 shrink-0 text-xs shadow">
+    <!-- 左側：公告摘要條 -->
+    <div id="top-announcement-summary" class="flex items-center gap-2 min-w-0 flex-1 cursor-pointer group" title="點擊查看完整公告與教練簡介">
+      <span id="top-announcement-sticker" class="text-base sm:text-lg shrink-0 group-hover:scale-110 transition">📢</span>
+      <span class="bg-sky-400 text-slate-950 font-black px-1.5 py-0.5 rounded text-[10px] sm:text-xs shrink-0">最新公告</span>
+      <span id="top-announcement-text" class="truncate text-sky-100 font-semibold group-hover:text-white transition">
+        歡迎來到羽球場預約統計系統！點擊查看教練團簡介與最新消息。
+      </span>
+    </div>
+
+    <!-- 右側：即時倒數計時器 -->
+    <div id="top-countdown-box" class="flex items-center gap-1.5 bg-amber-400/15 border border-amber-400/50 px-2.5 py-0.5 rounded-lg shrink-0">
+      <i class="fa-solid fa-hourglass-half text-amber-300 animate-pulse"></i>
+      <span id="top-countdown-title" class="text-amber-200 font-bold text-[11px] sm:text-xs">活動倒數：</span>
+      <span id="top-countdown-timer" class="font-mono font-black text-amber-300 text-xs sm:text-sm tracking-wide">-- 天 -- 時 -- 分 -- 秒</span>
+    </div>
+  </div>
+
   <!-- Quick Date Tabs Bar -->
-  <nav class="bg-slate-200 border-b border-slate-300 px-2 py-1 flex items-center gap-1 overflow-x-auto text-xs shrink-0" id="date-tabs-bar">
-    <!-- JS Rendered Tabs -->
+  <nav class="bg-slate-200 border-b border-slate-300 px-2 py-1 flex items-center gap-1.5 overflow-x-auto text-xs shrink-0" id="date-tabs-bar">
+    <!-- JS Rendered Tabs (選取的當日日期底色為螢光黃) -->
   </nav>
 
   <!-- Event Header Notice Banner -->
-  <div class="bg-indigo-950 text-white px-3 sm:px-4 py-1.5 border-b border-indigo-900 flex flex-wrap items-center justify-between gap-2.5 shrink-0 shadow-inner">
-    <div class="flex items-center gap-2 flex-1 min-w-[300px]">
-      <div class="bg-amber-400 text-slate-950 font-black px-2.5 py-1 rounded text-xs sm:text-sm tracking-wider flex items-center gap-1.5 shrink-0 uppercase shadow">
+  <div class="bg-indigo-950 text-white px-2.5 sm:px-4 py-1.5 border-b border-indigo-900 flex flex-wrap items-center justify-between gap-2 shrink-0 shadow-inner">
+    <div class="flex items-center gap-2 flex-1 min-w-[240px]">
+      <div class="bg-amber-400 text-slate-950 font-black px-2 py-1 rounded text-[11px] sm:text-sm tracking-wider flex items-center gap-1.5 shrink-0 uppercase shadow">
         <i class="fa-solid fa-trophy"></i>
         <span>今日賽事/活動備註</span>
       </div>
       
-      <div class="relative flex-1 max-w-md overflow-hidden bg-indigo-900/80 hover:bg-indigo-900 rounded border border-amber-400/50 h-9 flex items-center px-2 cursor-pointer" id="marquee-container" title="點擊進行編輯">
-        <input type="text" id="day-event-title" readonly placeholder="點擊設定活動標記 (如：摩亞盃...)" class="w-full bg-transparent text-amber-300 font-extrabold text-base sm:text-lg px-1 focus:outline-none placeholder-indigo-300/60 tracking-wide cursor-not-allowed">
-        <div id="day-event-marquee" class="hidden w-full overflow-hidden text-amber-300 font-extrabold text-base sm:text-lg tracking-wide select-none absolute inset-0 flex items-center px-2">
+      <div class="relative flex-1 max-w-md overflow-hidden bg-indigo-900/80 hover:bg-indigo-900 rounded border border-amber-400/50 h-8 sm:h-9 flex items-center px-2 cursor-pointer" id="marquee-container" title="點擊進行編輯">
+        <input type="text" id="day-event-title" readonly placeholder="點擊設定活動標記 (如：摩亞盃...)" class="w-full bg-transparent text-amber-300 font-extrabold text-sm sm:text-lg px-1 focus:outline-none placeholder-indigo-300/60 tracking-wide cursor-not-allowed">
+        <div id="day-event-marquee" class="hidden w-full overflow-hidden text-amber-300 font-extrabold text-sm sm:text-lg tracking-wide select-none absolute inset-0 flex items-center px-2">
           <div id="marquee-text" class="animate-marquee"></div>
         </div>
       </div>
     </div>
 
-    <div class="flex items-center gap-2 shrink-0 flex-wrap">
+    <div class="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap">
+      <!-- 管理員專屬：公告與倒數設定 -->
+      <button id="open-board-manage-btn" class="hidden bg-sky-500 hover:bg-sky-400 text-slate-950 font-extrabold px-2.5 py-1.5 rounded-lg text-xs transition shadow border border-sky-300 flex items-center gap-1">
+        <i class="fa-solid fa-bullhorn"></i> 公告與倒數設定
+      </button>
+
       <!-- 管理員專屬：快速文字預約 -->
       <button id="open-quick-parse-btn" class="hidden bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold px-2.5 py-1.5 rounded-lg text-xs transition shadow border border-fuchsia-400 flex items-center gap-1">
         <i class="fa-solid fa-wand-magic-sparkles"></i> 快速文字預約
@@ -163,7 +212,7 @@
         <i class="fa-solid fa-user-gear"></i> 教練管理
       </button>
 
-      <div class="hidden md:flex items-center gap-3 text-[11px] font-medium text-indigo-200 border-l border-indigo-800/80 pl-3">
+      <div class="hidden xl:flex items-center gap-3 text-[11px] font-medium text-indigo-200 border-l border-indigo-800/80 pl-3">
         <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-emerald-100 border border-emerald-400 inline-block shadow-sm"></span> 個練預約</span>
         <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-amber-100 border border-amber-400 inline-block shadow-sm"></span> 社團包場</span>
         <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-purple-100 border border-purple-400 inline-block shadow-sm"></span> 其他用途</span>
@@ -172,17 +221,17 @@
     </div>
   </div>
 
-  <!-- Main Excel / Mobile Grid Area -->
-  <main class="flex-1 overflow-auto grid-scroll p-2 sm:p-4 pb-24 bg-slate-100 flex flex-col">
-    <div id="main-container" class="bg-white rounded-lg shadow-md border border-slate-300 overflow-hidden flex-1 flex flex-col min-w-[1000px]">
-      <div id="grid-table" class="divide-y divide-slate-200 flex-1 flex flex-col">
+  <!-- Main Excel / Mobile Grid Area (自動隨視窗螢幕調整大小) -->
+  <main class="flex-1 overflow-auto grid-scroll p-2 sm:p-3 lg:p-4 pb-20 bg-slate-100 flex flex-col w-full">
+    <div id="main-container" class="bg-white rounded-lg shadow-md border border-slate-300 overflow-x-auto flex-1 flex flex-col w-full">
+      <div id="grid-table" class="divide-y divide-slate-200 flex-1 flex flex-col w-full min-w-[780px] lg:min-w-0">
         <!-- JS Dynamic Table Construction -->
       </div>
     </div>
   </main>
 
   <!-- Selection Action Bar -->
-  <div id="action-bar" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-4 sm:px-5 py-2.5 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 translate-y-24 opacity-0 z-30 border border-slate-700 w-[90%] max-w-md justify-between sm:justify-start">
+  <div id="action-bar" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-4 sm:px-5 py-2.5 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 translate-y-24 opacity-0 z-30 border border-slate-700 w-[92%] max-w-md justify-between sm:justify-start">
     <div class="text-xs shrink-0">
       已選取 <span id="selected-count" class="font-bold text-amber-400 text-sm">0</span> 格
     </div>
@@ -192,6 +241,196 @@
       <span>填寫預約資料</span>
     </button>
     <button id="cancel-selection-btn" class="text-xs text-slate-400 hover:text-white px-2 py-1">取消</button>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- 📢 一般使用者開啟網頁可見：公告系統、貼圖、教練簡介與倒數視窗 -->
+  <!-- ========================================================= -->
+  <div id="public-announcement-modal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <!-- Top Banner -->
+      <div class="p-4 sm:p-5 bg-gradient-to-r from-sky-800 via-indigo-900 to-emerald-900 text-white flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3 min-w-0">
+          <div id="modal-announcement-sticker" class="text-3xl sm:text-4xl bg-white/15 p-2 rounded-xl border border-white/20 shadow-inner sticker-bounce shrink-0">🏸</div>
+          <div class="min-w-0">
+            <span class="inline-block text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2 py-0.5 rounded mb-1">球隊公告 & 教練資訊</span>
+            <h3 id="modal-announcement-title" class="font-black text-base sm:text-lg leading-snug text-white truncate">歡迎來到羽球場預約統計系統！</h3>
+          </div>
+        </div>
+        <button id="close-public-announcement-btn" class="text-slate-200 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition shrink-0">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1 bg-slate-50">
+        <!-- 倒數計時器卡片 -->
+        <div id="modal-countdown-card" class="bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 rounded-xl p-3.5 shadow-md border border-amber-300 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div class="flex items-center gap-2 font-black text-xs sm:text-sm">
+            <span class="text-xl">⏳</span>
+            <span id="modal-countdown-title">距離下次重要活動倒數</span>
+          </div>
+          <div id="modal-countdown-timer" class="bg-slate-950 text-amber-300 font-mono font-black text-sm sm:text-base px-3 py-1 rounded-lg tracking-wider shadow-inner">
+            -- 天 -- 時 -- 分 -- 秒
+          </div>
+        </div>
+
+        <!-- 公告內文與貼圖展示 -->
+        <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm space-y-2.5">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <span class="text-xs font-extrabold text-sky-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-message"></i> 公告內容說明
+            </span>
+            <span id="modal-announcement-updated" class="text-[11px] text-slate-400 font-mono"></span>
+          </div>
+          <div id="modal-announcement-body" class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line"></div>
+          <div id="modal-announcement-image-wrap" class="hidden pt-2">
+            <img id="modal-announcement-image" src="" alt="公告貼圖" class="max-h-48 rounded-lg border border-slate-200 mx-auto object-contain shadow-sm">
+          </div>
+        </div>
+
+        <!-- 教練團簡介展示區 -->
+        <div id="modal-coach-intro-section" class="space-y-2.5">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs sm:text-sm font-black text-slate-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-medal text-amber-500"></i> 教練團簡介
+            </h4>
+            <span class="text-[11px] text-slate-500">專業個別指導・歡迎預約諮詢</span>
+          </div>
+          <div id="modal-coach-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <!-- JS 動態渲染教練簡介卡片 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="p-3.5 bg-white border-t border-slate-200 flex items-center justify-between shrink-0">
+        <span class="text-[11px] text-slate-400">可隨時點擊上方「公告 / 教練簡介」按鈕再次查看</span>
+        <button id="confirm-public-announcement-btn" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow transition">
+          我知道了，進入預約表
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- 🛠️ 管理者專屬：公告系統（貼圖、教練簡介）與倒數計時器設定 Modal -->
+  <!-- ========================================================= -->
+  <div id="board-manage-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="p-4 bg-sky-800 text-white flex items-center justify-between shrink-0">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <i class="fa-solid fa-bullhorn"></i>
+          <span>管理者設定：公告系統（貼圖 / 教練簡介）與倒數計時器</span>
+        </h3>
+        <button id="close-board-manage-btn" class="text-sky-200 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-4 space-y-5 overflow-y-auto flex-1">
+        <!-- 區塊一：倒數計時器設定 -->
+        <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-black text-xs sm:text-sm text-amber-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-hourglass-half text-amber-600"></i> 1. 倒數計時器設定
+            </h4>
+            <label class="flex items-center gap-1.5 text-xs font-bold text-amber-900 cursor-pointer">
+              <input type="checkbox" id="admin-countdown-enabled" class="w-4 h-4 accent-amber-600 rounded">
+              <span>啟用倒數計時器</span>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">倒數事件標題</label>
+              <input type="text" id="admin-countdown-title" placeholder="例如：距離 115年縣長盃羽球賽" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">目標日期與時間</label>
+              <input type="datetime-local" id="admin-countdown-datetime" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">倒數結束後顯示文字</label>
+            <input type="text" id="admin-countdown-endmsg" placeholder="例如：🎉 活動已正式開始，大家加油！" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
+          </div>
+        </div>
+
+        <!-- 區塊二：公告內容與貼圖設定 -->
+        <div class="bg-sky-50/70 border border-sky-200 rounded-xl p-3.5 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h4 class="font-black text-xs sm:text-sm text-sky-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-note-sticky text-sky-600"></i> 2. 公告內容與貼圖設定
+            </h4>
+            <div class="flex items-center gap-3">
+              <label class="flex items-center gap-1.5 text-xs font-bold text-sky-900 cursor-pointer">
+                <input type="checkbox" id="admin-ann-enabled" class="w-4 h-4 accent-sky-600 rounded">
+                <span>顯示頂部公告列</span>
+              </label>
+              <label class="flex items-center gap-1.5 text-xs font-bold text-indigo-900 cursor-pointer">
+                <input type="checkbox" id="admin-ann-autopopup" class="w-4 h-4 accent-indigo-600 rounded">
+                <span>開啟網頁自動彈出視窗</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">主視覺貼圖</label>
+              <input type="text" id="admin-ann-sticker" value="🏸" class="w-full text-center text-lg p-1.5 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500">
+            </div>
+            <div class="sm:col-span-3">
+              <label class="block text-xs font-bold text-slate-700 mb-1">公告主標題</label>
+              <input type="text" id="admin-ann-title" placeholder="輸入公告標題..." class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500 font-bold">
+            </div>
+          </div>
+
+          <!-- 貼圖快速點選盤 -->
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">點選貼圖（可設為主貼圖或插入內文）：</label>
+            <div id="sticker-picker-grid" class="flex flex-wrap gap-1.5 bg-white p-2 rounded-lg border border-slate-200">
+              <!-- JS 動態生成貼圖按鈕 -->
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">公告詳細內文</label>
+            <textarea id="admin-ann-content" rows="3" placeholder="輸入公告說明文字..." class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500 leading-relaxed"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">附加貼圖 / 海報圖片網址 <span class="text-slate-400 font-normal">(選填，貼上圖片 URL 即可顯示)</span></label>
+            <input type="url" id="admin-ann-image-url" placeholder="https://..." class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono">
+          </div>
+        </div>
+
+        <!-- 區塊三：教練團簡介編輯 -->
+        <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-black text-xs sm:text-sm text-emerald-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-medal text-emerald-600"></i> 3. 公告內「教練團簡介」設定
+            </h4>
+            <label class="flex items-center gap-1.5 text-xs font-bold text-emerald-900 cursor-pointer">
+              <input type="checkbox" id="admin-ann-show-coaches" class="w-4 h-4 accent-emerald-600 rounded">
+              <span>在公告中展示教練簡介</span>
+            </label>
+          </div>
+          <p class="text-[11px] text-slate-600">可為每位教練設定專屬代表貼圖、專長標籤與教學簡介（與教練名單自動同步）：</p>
+          <div id="admin-coach-profiles-list" class="space-y-2.5">
+            <!-- JS 動態生成教練簡介編輯列 -->
+          </div>
+        </div>
+      </div>
+
+      <div class="p-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2 shrink-0">
+        <button type="button" id="cancel-board-manage-btn" class="px-3.5 py-1.5 border border-slate-300 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100">取消</button>
+        <button type="button" id="save-board-manage-btn" class="px-4 py-1.5 bg-sky-700 hover:bg-sky-600 text-white rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5">
+          <i class="fa-solid fa-floppy-disk"></i> 儲存並立即發布
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Booking Modal -->
@@ -415,7 +654,7 @@
       </div>
       
       <div class="p-4 space-y-3 flex-1 overflow-y-auto">
-        <p class="text-[11px] text-slate-500 bg-slate-50 p-2 rounded border">在此可維護教練名單，並為每位教練設定專屬的 **1對1** 與 **1對2** 每小時收費標準。</p>
+        <p class="text-[11px] text-slate-500 bg-slate-50 p-2 rounded border">在此可維護教練名單，並為每位教練設定專屬的 **1對1** 與 **1對2** 每小時收費標準（教練簡介可於「公告與倒數設定」編輯）。</p>
         
         <div class="space-y-2.5" id="coach-manage-list">
           <!-- JS 動態寫入 -->
@@ -518,7 +757,7 @@
         </div>
 
         <!-- 詳細紀錄表格 -->
-        <div class="border border-slate-200 rounded-lg overflow-hidden relative min-h-[140px]">
+        <div class="border border-slate-200 rounded-lg overflow-x-auto relative min-h-[140px]">
           <div id="stats-loading-overlay" class="hidden absolute inset-0 bg-white/80 backdrop-blur-[1px] flex items-center justify-center z-10">
             <div class="text-xs font-bold text-amber-700 flex items-center gap-2">
               <i class="fa-solid fa-spinner fa-spin text-base"></i> 正在載入歷史資料...
@@ -568,29 +807,112 @@
     ];
     const GRADE_OPTIONS = ['幼兒園', '一年級', '二年級', '三年級', '四年級', '五年級', '六年級', '國中'];
 
+    const STICKER_CATALOG = [
+      { icon: '🏸', label: '羽球魂' },
+      { icon: '🏆', label: '比賽加油' },
+      { icon: '🔥', label: '熱血特訓' },
+      { icon: '📢', label: '重要公告' },
+      { icon: '⏰', label: '準時集合' },
+      { icon: '💪', label: '體能強化' },
+      { icon: '🎉', label: '恭喜晉級' },
+      { icon: '⚠️', label: '場地異動' },
+      { icon: '💧', label: '記得補水' },
+      { icon: '🥇', label: '金牌教練' },
+      { icon: '⚡', label: '敏捷步伐' },
+      { icon: '🤝', label: '團隊合作' }
+    ];
+
     let currentDate = new Date().toISOString().split('T')[0];
     let selectedCells = new Set(); 
     let bookings = {}; 
     let currentEditKey = null; 
     let currentBookingType = 'personal';
-    let isMobileView = localStorage.getItem('badminton_view_mode') === 'mobile';
+
+    // 視窗自動自適應模式判斷
+    let userPinnedViewMode = localStorage.getItem('badminton_view_mode_pinned') === 'true';
+    let isMobileView = userPinnedViewMode
+      ? localStorage.getItem('badminton_view_mode') === 'mobile'
+      : window.innerWidth < 768;
+
     let isAdminLoggedIn = false;
     let unsubscribe = null; 
     let coachUnsubscribe = null;
     let studentGradeUnsubscribe = null;
+    let boardUnsubscribe = null;
+    let onlineUnsubscribe = null;
+    let presenceInterval = null;
+    let countdownInterval = null;
+    let hasShownAutoPopupThisSession = false;
+
+    const tabSessionId = sessionStorage.getItem('badminton_tab_session_id') ||
+      `sess_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    sessionStorage.setItem('badminton_tab_session_id', tabSessionId);
+
+    const DEFAULT_COACH_PROFILES = {
+      '彭教練': { avatar: '🥇', tag: '基礎與戰術指導', bio: '專注基本功動作定型、單雙打輪轉觀念與穩定度訓練。' },
+      '盧教練': { avatar: '⚡', tag: '敏捷步伐與控球', bio: '擅長場上步伐啟動、網前細膩手感與節奏變化指導。' },
+      '陳教練': { avatar: '🔥', tag: '進階殺球與體能', bio: '強化後場進攻發力、連貫防守與實戰對抗訓練。' },
+      '張教練': { avatar: '🎯', tag: '精準落點與球路', bio: '注重擊球品質、發接發搶攻與比賽心理素質培養。' },
+      '方教練': { avatar: '🏸', tag: '青少年啟蒙培訓', bio: '耐心引導羽球興趣、協調性建立與標準握拍揮拍。' }
+    };
 
     let coachList = JSON.parse(localStorage.getItem('badminton_coach_list_v2')) || [
-      { name: '彭教練', rate1: 600, rate2: 400 },
-      { name: '盧教練', rate1: 600, rate2: 400 },
-      { name: '陳教練', rate1: 600, rate2: 400 },
-      { name: '張教練', rate1: 600, rate2: 400 },
-      { name: '方教練', rate1: 600, rate2: 400 }
+      { name: '彭教練', rate1: 600, rate2: 400, ...DEFAULT_COACH_PROFILES['彭教練'] },
+      { name: '盧教練', rate1: 600, rate2: 400, ...DEFAULT_COACH_PROFILES['盧教練'] },
+      { name: '陳教練', rate1: 600, rate2: 400, ...DEFAULT_COACH_PROFILES['陳教練'] },
+      { name: '張教練', rate1: 600, rate2: 400, ...DEFAULT_COACH_PROFILES['張教練'] },
+      { name: '方教練', rate1: 600, rate2: 400, ...DEFAULT_COACH_PROFILES['方教練'] }
     ];
 
-    if (coachList.length > 0 && typeof coachList[0] === 'string') {
-      coachList = coachList.map(cName => ({ name: cName, rate1: 600, rate2: 400 }));
-      localStorage.setItem('badminton_coach_list_v2', JSON.stringify(coachList));
+    function normalizeCoachList(list) {
+      return list.map(item => {
+        if (typeof item === 'string') {
+          const def = DEFAULT_COACH_PROFILES[item] || { avatar: '🏸', tag: '專業教練', bio: '歡迎預約一對一或一對二個人練習。' };
+          return { name: item, rate1: 600, rate2: 400, ...def };
+        }
+        const def = DEFAULT_COACH_PROFILES[item.name] || { avatar: '🏸', tag: '專業教練', bio: '歡迎預約一對一或一對二個人練習。' };
+        return {
+          name: item.name,
+          rate1: item.rate1 ?? 600,
+          rate2: item.rate2 ?? 400,
+          avatar: item.avatar || def.avatar,
+          tag: item.tag || def.tag,
+          bio: item.bio || def.bio
+        };
+      });
     }
+
+    coachList = normalizeCoachList(coachList);
+    localStorage.setItem('badminton_coach_list_v2', JSON.stringify(coachList));
+
+    // 預設倒數日期（若尚未設定，預設為 7 天後早上 09:00）
+    function getDefaultCountdownTarget() {
+      const d = new Date();
+      d.setDate(d.getDate() + 7);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}T09:00`;
+    }
+
+    let boardSettings = JSON.parse(localStorage.getItem('badminton_board_settings_v1')) || {
+      announcement: {
+        enabled: true,
+        autoPopup: true,
+        title: '歡迎來到羽球場預約與練習統計系統！',
+        sticker: '🏸',
+        content: '1. 請學員提前 10 分鐘到場完成暖身與裝備檢查。\n2. 如需調整個人練習時段，請提前聯繫指導教練或管理員。\n3. 歡迎點擊下方教練卡片認識我們的教練團！',
+        imageUrl: '',
+        showCoaches: true,
+        updatedAt: ''
+      },
+      countdown: {
+        enabled: true,
+        title: '距離下次重要賽事 / 檢定倒數',
+        targetDateTime: getDefaultCountdownTarget(),
+        endMessage: '🎉 活動已正式開始，大家加油！🏸'
+      }
+    };
 
     // 學員年級總表 { "冬孜": "二年級", "以家": "三年級", ... }
     let studentGradeMap = JSON.parse(localStorage.getItem('badminton_student_grades_v1')) || {
@@ -601,10 +923,19 @@
     };
 
     function saveCoachData() {
+      coachList = normalizeCoachList(coachList);
       localStorage.setItem('badminton_coach_list_v2', JSON.stringify(coachList));
       if (window.db) {
         const coachDocRef = window.fsDoc(window.db, "settings", "coaches");
         window.fsSetDoc(coachDocRef, { list: coachList }).catch(err => console.error("教練資料儲存失敗:", err));
+      }
+    }
+
+    function saveBoardSettings() {
+      localStorage.setItem('badminton_board_settings_v1', JSON.stringify(boardSettings));
+      if (window.db) {
+        const boardDocRef = window.fsDoc(window.db, "settings", "board");
+        window.fsSetDoc(boardDocRef, boardSettings).catch(err => console.error("公告與倒數設定儲存失敗:", err));
       }
     }
 
@@ -636,6 +967,47 @@
       return getSingleStudentGrade(raw, fallbackGrade);
     }
 
+    // ==========================================
+    // 🟢 目前線上人數即時追蹤 (Firestore Presence)
+    // ==========================================
+    function setupOnlinePresence() {
+      if (!window.db || !window.fsCollection) return;
+
+      const myPresenceRef = window.fsDoc(window.db, "online_users", tabSessionId);
+      const sendHeartbeat = () => {
+        window.fsSetDoc(myPresenceRef, { lastSeen: Date.now() }).catch(() => {});
+      };
+
+      sendHeartbeat();
+      if (presenceInterval) clearInterval(presenceInterval);
+      presenceInterval = setInterval(sendHeartbeat, 25000);
+
+      window.addEventListener('beforeunload', () => {
+        if (window.fsDeleteDoc) {
+          window.fsDeleteDoc(myPresenceRef).catch(() => {});
+        }
+      });
+
+      if (onlineUnsubscribe) onlineUnsubscribe();
+      const onlineColRef = window.fsCollection(window.db, "online_users");
+      onlineUnsubscribe = window.fsOnSnapshot(onlineColRef, (snapshot) => {
+        const now = Date.now();
+        let activeCount = 0;
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const lastSeen = data && data.lastSeen ? data.lastSeen : 0;
+          if (now - lastSeen < 75000) {
+            activeCount++;
+          } else if (now - lastSeen > 180000 && window.fsDeleteDoc) {
+            window.fsDeleteDoc(docSnap.ref).catch(() => {});
+          }
+        });
+        document.getElementById('online-user-count').innerText = Math.max(1, activeCount);
+      }, (err) => {
+        console.error("線上人數監聽失敗:", err);
+      });
+    }
+
     function setupCoachFirestoreListener() {
       if (!window.db) return;
       if (coachUnsubscribe) coachUnsubscribe();
@@ -643,17 +1015,49 @@
       const coachDocRef = window.fsDoc(window.db, "settings", "coaches");
       coachUnsubscribe = window.fsOnSnapshot(coachDocRef, (docSnap) => {
         if (docSnap.exists() && Array.isArray(docSnap.data().list)) {
-          coachList = docSnap.data().list;
+          coachList = normalizeCoachList(docSnap.data().list);
           localStorage.setItem('badminton_coach_list_v2', JSON.stringify(coachList));
           if (!coachManageModal.classList.contains('hidden')) {
             renderCoachManageList();
           }
+          renderPublicAnnouncementUI();
           renderGrid();
         } else {
           saveCoachData();
         }
       }, (err) => {
         console.error("教練 Firestore 監聽失敗:", err);
+      });
+    }
+
+    function setupBoardFirestoreListener() {
+      if (!window.db) {
+        renderPublicAnnouncementUI();
+        startCountdownLoop();
+        maybeAutoOpenAnnouncementModal();
+        return;
+      }
+      if (boardUnsubscribe) boardUnsubscribe();
+
+      const boardDocRef = window.fsDoc(window.db, "settings", "board");
+      boardUnsubscribe = window.fsOnSnapshot(boardDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          boardSettings = {
+            announcement: { ...boardSettings.announcement, ...(data.announcement || {}) },
+            countdown: { ...boardSettings.countdown, ...(data.countdown || {}) }
+          };
+          localStorage.setItem('badminton_board_settings_v1', JSON.stringify(boardSettings));
+        } else {
+          saveBoardSettings();
+        }
+        renderPublicAnnouncementUI();
+        startCountdownLoop();
+        maybeAutoOpenAnnouncementModal();
+      }, (err) => {
+        console.error("公告與倒數設定監聽失敗:", err);
+        renderPublicAnnouncementUI();
+        startCountdownLoop();
       });
     }
 
@@ -680,7 +1084,7 @@
 
     function getCoachObj(coachName) {
       const found = coachList.find(c => c.name === coachName);
-      return found || { name: coachName || '無', rate1: 600, rate2: 400 };
+      return found || { name: coachName || '無', rate1: 600, rate2: 400, avatar: '🏸', tag: '專業教練', bio: '' };
     }
 
     function setupFirestoreListener() {
@@ -693,6 +1097,8 @@
 
       setupCoachFirestoreListener();
       setupStudentGradeFirestoreListener();
+      setupBoardFirestoreListener();
+      setupOnlinePresence();
 
       if (!bookings[currentDate]) {
         bookings[currentDate] = { eventTitle: '', nightOnly: false, hideAllSlots: false, slots: {} };
@@ -763,6 +1169,51 @@
     const marqueeContainer = document.getElementById('marquee-container');
     const dayEventMarquee = document.getElementById('day-event-marquee');
     const marqueeText = document.getElementById('marquee-text');
+
+    // Public Announcement & Countdown DOM
+    const publicTopNoticeBar = document.getElementById('public-top-notice-bar');
+    const topAnnouncementSummary = document.getElementById('top-announcement-summary');
+    const topAnnouncementSticker = document.getElementById('top-announcement-sticker');
+    const topAnnouncementText = document.getElementById('top-announcement-text');
+    const topCountdownBox = document.getElementById('top-countdown-box');
+    const topCountdownTitle = document.getElementById('top-countdown-title');
+    const topCountdownTimer = document.getElementById('top-countdown-timer');
+
+    const openPublicAnnouncementBtn = document.getElementById('open-public-announcement-btn');
+    const publicAnnouncementModal = document.getElementById('public-announcement-modal');
+    const closePublicAnnouncementBtn = document.getElementById('close-public-announcement-btn');
+    const confirmPublicAnnouncementBtn = document.getElementById('confirm-public-announcement-btn');
+    const modalAnnouncementSticker = document.getElementById('modal-announcement-sticker');
+    const modalAnnouncementTitle = document.getElementById('modal-announcement-title');
+    const modalAnnouncementUpdated = document.getElementById('modal-announcement-updated');
+    const modalAnnouncementBody = document.getElementById('modal-announcement-body');
+    const modalAnnouncementImageWrap = document.getElementById('modal-announcement-image-wrap');
+    const modalAnnouncementImage = document.getElementById('modal-announcement-image');
+    const modalCountdownCard = document.getElementById('modal-countdown-card');
+    const modalCountdownTitle = document.getElementById('modal-countdown-title');
+    const modalCountdownTimer = document.getElementById('modal-countdown-timer');
+    const modalCoachIntroSection = document.getElementById('modal-coach-intro-section');
+    const modalCoachCardsGrid = document.getElementById('modal-coach-cards-grid');
+
+    // Admin Board Manage DOM
+    const openBoardManageBtn = document.getElementById('open-board-manage-btn');
+    const boardManageModal = document.getElementById('board-manage-modal');
+    const closeBoardManageBtn = document.getElementById('close-board-manage-btn');
+    const cancelBoardManageBtn = document.getElementById('cancel-board-manage-btn');
+    const saveBoardManageBtn = document.getElementById('save-board-manage-btn');
+    const adminCountdownEnabled = document.getElementById('admin-countdown-enabled');
+    const adminCountdownTitle = document.getElementById('admin-countdown-title');
+    const adminCountdownDatetime = document.getElementById('admin-countdown-datetime');
+    const adminCountdownEndmsg = document.getElementById('admin-countdown-endmsg');
+    const adminAnnEnabled = document.getElementById('admin-ann-enabled');
+    const adminAnnAutopopup = document.getElementById('admin-ann-autopopup');
+    const adminAnnSticker = document.getElementById('admin-ann-sticker');
+    const adminAnnTitle = document.getElementById('admin-ann-title');
+    const stickerPickerGrid = document.getElementById('sticker-picker-grid');
+    const adminAnnContent = document.getElementById('admin-ann-content');
+    const adminAnnImageUrl = document.getElementById('admin-ann-image-url');
+    const adminAnnShowCoaches = document.getElementById('admin-ann-show-coaches');
+    const adminCoachProfilesList = document.getElementById('admin-coach-profiles-list');
 
     const openQuickParseBtn = document.getElementById('open-quick-parse-btn');
     const quickParseModal = document.getElementById('quick-parse-modal');
@@ -868,6 +1319,248 @@
     const inputOtherNote = document.getElementById('input-other-note');
     const modalSlotsSummary = document.getElementById('modal-slots-summary');
 
+    // ==========================================
+    // 📢 公告系統、教練簡介與倒數計時器邏輯
+    // ==========================================
+    function renderPublicAnnouncementUI() {
+      const ann = boardSettings.announcement || {};
+      const cd = boardSettings.countdown || {};
+
+      // 頂部橫幅顯示控制
+      const showAnnBar = ann.enabled !== false;
+      const showCdBar = cd.enabled !== false && !!cd.targetDateTime;
+
+      if (!showAnnBar && !showCdBar) {
+        publicTopNoticeBar.classList.add('hidden');
+      } else {
+        publicTopNoticeBar.classList.remove('hidden');
+      }
+
+      if (showAnnBar) {
+        topAnnouncementSummary.classList.remove('hidden');
+        topAnnouncementSticker.innerText = ann.sticker || '📢';
+        topAnnouncementText.innerText = ann.title || '點擊查看教練團簡介與最新消息';
+      } else {
+        topAnnouncementSummary.classList.add('hidden');
+      }
+
+      if (showCdBar) {
+        topCountdownBox.classList.remove('hidden');
+        modalCountdownCard.classList.remove('hidden');
+        topCountdownTitle.innerText = `${cd.title || '活動倒數'}：`;
+        modalCountdownTitle.innerText = cd.title || '距離下次重要活動倒數';
+      } else {
+        topCountdownBox.classList.add('hidden');
+        modalCountdownCard.classList.add('hidden');
+      }
+
+      // 彈出公告視窗內容填充
+      modalAnnouncementSticker.innerText = ann.sticker || '🏸';
+      modalAnnouncementTitle.innerText = ann.title || '球隊最新公告';
+      modalAnnouncementUpdated.innerText = ann.updatedAt ? `更新時間：${ann.updatedAt}` : '';
+      modalAnnouncementBody.innerText = ann.content || '暫無公告內容。';
+
+      if (ann.imageUrl && ann.imageUrl.trim() !== '') {
+        modalAnnouncementImage.src = ann.imageUrl.trim();
+        modalAnnouncementImageWrap.classList.remove('hidden');
+      } else {
+        modalAnnouncementImageWrap.classList.add('hidden');
+      }
+
+      // 教練團簡介卡片渲染
+      if (ann.showCoaches !== false && coachList.length > 0) {
+        modalCoachIntroSection.classList.remove('hidden');
+        modalCoachCardsGrid.innerHTML = '';
+        coachList.forEach(coach => {
+          const card = document.createElement('div');
+          card.className = 'bg-white rounded-xl p-3 border border-slate-200 shadow-sm flex items-start gap-2.5 hover:border-emerald-400 transition';
+          card.innerHTML = `
+            <div class="text-2xl bg-emerald-50 border border-emerald-200 w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
+              ${coach.avatar || '🏸'}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                <span class="font-black text-xs sm:text-sm text-slate-900">${coach.name}</span>
+                <span class="text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded">${coach.tag || '專業指導'}</span>
+              </div>
+              <p class="text-[11px] text-slate-600 leading-relaxed">${coach.bio || '歡迎預約一對一或一對二個人練習指導。'}</p>
+            </div>
+          `;
+          modalCoachCardsGrid.appendChild(card);
+        });
+      } else {
+        modalCoachIntroSection.classList.add('hidden');
+      }
+    }
+
+    function updateCountdownTick() {
+      const cd = boardSettings.countdown || {};
+      if (cd.enabled === false || !cd.targetDateTime) return;
+
+      const targetMs = new Date(cd.targetDateTime).getTime();
+      if (isNaN(targetMs)) {
+        topCountdownTimer.innerText = '日期格式錯誤';
+        modalCountdownTimer.innerText = '日期格式錯誤';
+        return;
+      }
+
+      const diff = targetMs - Date.now();
+      if (diff <= 0) {
+        const endText = cd.endMessage || '🎉 時間已到，活動開始！';
+        topCountdownTimer.innerText = endText;
+        modalCountdownTimer.innerText = endText;
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const mins = Math.floor((diff / (1000 * 60)) % 60);
+      const secs = Math.floor((diff / 1000) % 60);
+
+      const formatted = `${days} 天 ${String(hours).padStart(2, '0')} 時 ${String(mins).padStart(2, '0')} 分 ${String(secs).padStart(2, '0')} 秒`;
+      topCountdownTimer.innerText = formatted;
+      modalCountdownTimer.innerText = formatted;
+    }
+
+    function startCountdownLoop() {
+      updateCountdownTick();
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownInterval = setInterval(updateCountdownTick, 1000);
+    }
+
+    function maybeAutoOpenAnnouncementModal() {
+      if (hasShownAutoPopupThisSession) return;
+      const ann = boardSettings.announcement || {};
+      if (ann.enabled !== false && ann.autoPopup !== false) {
+        hasShownAutoPopupThisSession = true;
+        renderPublicAnnouncementUI();
+        publicAnnouncementModal.classList.remove('hidden');
+      }
+    }
+
+    openPublicAnnouncementBtn.addEventListener('click', () => {
+      renderPublicAnnouncementUI();
+      publicAnnouncementModal.classList.remove('hidden');
+    });
+    topAnnouncementSummary.addEventListener('click', () => {
+      renderPublicAnnouncementUI();
+      publicAnnouncementModal.classList.remove('hidden');
+    });
+    closePublicAnnouncementBtn.addEventListener('click', () => publicAnnouncementModal.classList.add('hidden'));
+    confirmPublicAnnouncementBtn.addEventListener('click', () => publicAnnouncementModal.classList.add('hidden'));
+
+    // 管理者打開「公告與倒數設定」Modal
+    openBoardManageBtn.addEventListener('click', () => {
+      if (!isAdminLoggedIn) return;
+      const ann = boardSettings.announcement || {};
+      const cd = boardSettings.countdown || {};
+
+      adminCountdownEnabled.checked = cd.enabled !== false;
+      adminCountdownTitle.value = cd.title || '';
+      adminCountdownDatetime.value = cd.targetDateTime || getDefaultCountdownTarget();
+      adminCountdownEndmsg.value = cd.endMessage || '🎉 活動已正式開始，大家加油！🏸';
+
+      adminAnnEnabled.checked = ann.enabled !== false;
+      adminAnnAutopopup.checked = ann.autoPopup !== false;
+      adminAnnSticker.value = ann.sticker || '🏸';
+      adminAnnTitle.value = ann.title || '';
+      adminAnnContent.value = ann.content || '';
+      adminAnnImageUrl.value = ann.imageUrl || '';
+      adminAnnShowCoaches.checked = ann.showCoaches !== false;
+
+      // 渲染貼圖選擇器
+      stickerPickerGrid.innerHTML = '';
+      STICKER_CATALOG.forEach(st => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'px-2 py-1 bg-slate-50 hover:bg-sky-100 border border-slate-200 hover:border-sky-400 rounded-lg text-xs flex items-center gap-1 transition';
+        btn.innerHTML = `<span class="text-base">${st.icon}</span><span class="text-[11px] font-medium text-slate-700">${st.label}</span>`;
+        btn.title = '左鍵設為主貼圖，同時可複製貼圖符號';
+        btn.addEventListener('click', () => {
+          adminAnnSticker.value = st.icon;
+          adminAnnContent.value = `${adminAnnContent.value}${adminAnnContent.value && !adminAnnContent.value.endsWith(' ') ? ' ' : ''}${st.icon}`;
+        });
+        stickerPickerGrid.appendChild(btn);
+      });
+
+      // 渲染教練簡介編輯列表
+      adminCoachProfilesList.innerHTML = '';
+      coachList.forEach((coach, idx) => {
+        const row = document.createElement('div');
+        row.className = 'bg-white p-2.5 rounded-lg border border-emerald-200 space-y-2';
+        row.innerHTML = `
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="font-black text-xs text-emerald-900 w-20 shrink-0">${coach.name}</span>
+            <div class="flex items-center gap-1">
+              <span class="text-[11px] text-slate-500">貼圖:</span>
+              <input type="text" value="${coach.avatar || '🏸'}" class="w-10 text-center text-sm p-1 border border-slate-300 rounded admin-coach-avatar" data-idx="${idx}">
+            </div>
+            <div class="flex items-center gap-1 flex-1 min-w-[140px]">
+              <span class="text-[11px] text-slate-500 shrink-0">專長標籤:</span>
+              <input type="text" value="${coach.tag || ''}" placeholder="例如：單打步伐與網前控球" class="w-full text-xs p-1 border border-slate-300 rounded admin-coach-tag" data-idx="${idx}">
+            </div>
+          </div>
+          <div>
+            <input type="text" value="${coach.bio || ''}" placeholder="輸入教練簡介說明..." class="w-full text-xs p-1.5 bg-slate-50 border border-slate-300 rounded admin-coach-bio" data-idx="${idx}">
+          </div>
+        `;
+        adminCoachProfilesList.appendChild(row);
+      });
+
+      boardManageModal.classList.remove('hidden');
+    });
+
+    closeBoardManageBtn.addEventListener('click', () => boardManageModal.classList.add('hidden'));
+    cancelBoardManageBtn.addEventListener('click', () => boardManageModal.classList.add('hidden'));
+
+    saveBoardManageBtn.addEventListener('click', () => {
+      if (!isAdminLoggedIn) return;
+
+      const now = new Date();
+      const updatedTimeStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      boardSettings = {
+        announcement: {
+          enabled: adminAnnEnabled.checked,
+          autoPopup: adminAnnAutopopup.checked,
+          sticker: adminAnnSticker.value.trim() || '🏸',
+          title: adminAnnTitle.value.trim() || '球隊最新公告',
+          content: adminAnnContent.value.trim(),
+          imageUrl: adminAnnImageUrl.value.trim(),
+          showCoaches: adminAnnShowCoaches.checked,
+          updatedAt: updatedTimeStr
+        },
+        countdown: {
+          enabled: adminCountdownEnabled.checked,
+          title: adminCountdownTitle.value.trim() || '活動倒數',
+          targetDateTime: adminCountdownDatetime.value,
+          endMessage: adminCountdownEndmsg.value.trim() || '🎉 活動已正式開始！'
+        }
+      };
+
+      // 更新每位教練的簡介欄位
+      adminCoachProfilesList.querySelectorAll('.admin-coach-avatar').forEach(inp => {
+        const idx = Number(inp.dataset.idx);
+        if (coachList[idx]) coachList[idx].avatar = inp.value.trim() || '🏸';
+      });
+      adminCoachProfilesList.querySelectorAll('.admin-coach-tag').forEach(inp => {
+        const idx = Number(inp.dataset.idx);
+        if (coachList[idx]) coachList[idx].tag = inp.value.trim() || '專業指導';
+      });
+      adminCoachProfilesList.querySelectorAll('.admin-coach-bio').forEach(inp => {
+        const idx = Number(inp.dataset.idx);
+        if (coachList[idx]) coachList[idx].bio = inp.value.trim();
+      });
+
+      saveCoachData();
+      saveBoardSettings();
+      renderPublicAnnouncementUI();
+      startCountdownLoop();
+
+      boardManageModal.classList.add('hidden');
+      alert('公告、教練簡介與倒數計時器已儲存並同步發布！');
+    });
+
     function updateAdminUIState() {
       if (isAdminLoggedIn) {
         clearDayBtn.classList.remove('hidden');
@@ -879,6 +1572,7 @@
         manageCoachesBtn.classList.remove('hidden');
         openStatsBtn.classList.remove('hidden');
         openQuickParseBtn.classList.remove('hidden');
+        openBoardManageBtn.classList.remove('hidden');
         adminLockIcon.className = 'fa-solid fa-lock-open';
         adminBtnText.innerText = '管理員登出';
         adminLoginBtn.className = 'bg-rose-600 hover:bg-rose-500 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition shadow-sm flex items-center gap-1 shrink-0';
@@ -890,6 +1584,7 @@
         manageCoachesBtn.classList.add('hidden');
         openStatsBtn.classList.add('hidden');
         openQuickParseBtn.classList.add('hidden');
+        openBoardManageBtn.classList.add('hidden');
         autoGradePreview.classList.add('hidden');
         adminLockIcon.className = 'fa-solid fa-lock';
         adminBtnText.innerText = '管理員登入';
@@ -2037,7 +2732,14 @@
         if (newCoachName && newCoachName.trim() !== '') {
           const trimmed = newCoachName.trim();
           if (!coachList.some(c => c.name === trimmed)) {
-            coachList.push({ name: trimmed, rate1: 600, rate2: 400 });
+            coachList.push({
+              name: trimmed,
+              rate1: 600,
+              rate2: 400,
+              avatar: '🏸',
+              tag: '專業教練',
+              bio: '歡迎預約一對一或一對二個人練習。'
+            });
             saveCoachData();
           }
           renderCoachSelect(trimmed);
@@ -2133,7 +2835,12 @@
           const r1Val = parseFloat(document.getElementById(`coach-r1-${idx}`).value) || 0;
           const r2Val = parseFloat(document.getElementById(`coach-r2-${idx}`).value) || 0;
           if (nameVal) {
-            coachList[idx] = { name: nameVal, rate1: r1Val, rate2: r2Val };
+            coachList[idx] = {
+              ...coachList[idx],
+              name: nameVal,
+              rate1: r1Val,
+              rate2: r2Val
+            };
             saveCoachData();
             alert('教練名稱與費率已同步更新至資料庫！');
             renderGrid();
@@ -2161,7 +2868,14 @@
       const r2Val = parseFloat(newCoach1on2.value) || 400;
 
       if (nameVal && !coachList.some(c => c.name === nameVal)) {
-        coachList.push({ name: nameVal, rate1: r1Val, rate2: r2Val });
+        coachList.push({
+          name: nameVal,
+          rate1: r1Val,
+          rate2: r2Val,
+          avatar: '🏸',
+          tag: '專業教練',
+          bio: '歡迎預約一對一或一對二個人練習。'
+        });
         saveCoachData();
         newCoachInput.value = '';
         renderCoachManageList();
@@ -2187,26 +2901,47 @@
         modeIcon.className = 'fa-solid fa-desktop';
         modeText.innerText = '切換電腦模式';
         modeBadge.innerText = '手機清單模式';
-        modeBadge.className = 'text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-medium border border-amber-500/40';
+        modeBadge.className = 'text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-medium border border-amber-500/40 shrink-0';
         mainContainer.className = 'bg-transparent rounded-none shadow-none border-none overflow-visible w-full';
-        gridTable.className = 'block space-y-3';
+        gridTable.className = 'block space-y-3 w-full';
       } else {
         modeIcon.className = 'fa-solid fa-mobile-screen-button';
         modeText.innerText = '切換手機模式';
         modeBadge.innerText = 'Excel 模式';
-        modeBadge.className = 'text-[10px] bg-emerald-700/80 text-emerald-200 px-1.5 py-0.5 rounded font-normal border border-emerald-600';
-        mainContainer.className = 'bg-white rounded-lg shadow-md border border-slate-300 overflow-hidden flex-1 flex flex-col min-w-[1000px]';
-        gridTable.className = 'divide-y divide-slate-200 flex-1 flex flex-col';
+        modeBadge.className = 'text-[10px] bg-emerald-700/80 text-emerald-200 px-1.5 py-0.5 rounded font-normal border border-emerald-600 shrink-0';
+        mainContainer.className = 'bg-white rounded-lg shadow-md border border-slate-300 overflow-x-auto flex-1 flex flex-col w-full';
+        gridTable.className = 'divide-y divide-slate-200 flex-1 flex flex-col w-full min-w-[780px] lg:min-w-0';
       }
     }
 
     toggleViewModeBtn.addEventListener('click', () => {
       isMobileView = !isMobileView;
+      userPinnedViewMode = true;
+      localStorage.setItem('badminton_view_mode_pinned', 'true');
       localStorage.setItem('badminton_view_mode', isMobileView ? 'mobile' : 'desktop');
       updateViewModeUI();
       renderGrid();
     });
 
+    // 視窗螢幕尺寸變化時自動調整排版
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (!userPinnedViewMode) {
+          const shouldBeMobile = window.innerWidth < 768;
+          if (shouldBeMobile !== isMobileView) {
+            isMobileView = shouldBeMobile;
+            updateViewModeUI();
+            renderGrid();
+          }
+        }
+      }, 150);
+    });
+
+    // ==========================================
+    // 🟡 日期分頁列（選取的當日日期底色為螢光黃）
+    // ==========================================
     function renderDateTabs() {
       dateTabsBar.innerHTML = '';
       const curr = new Date(currentDate);
@@ -2219,9 +2954,14 @@
         const isActive = dStr === currentDate;
 
         const tab = document.createElement('button');
-        tab.className = `px-2.5 py-1 rounded-t-md font-medium text-xs transition border-t border-x shrink-0 ${
-          isActive ? 'bg-white text-emerald-800 border-slate-300 font-bold shadow-sm' : 'bg-slate-200 hover:bg-slate-100 text-slate-600 border-transparent'
+        tab.className = `px-3 py-1 rounded-t-md text-xs transition border-t border-x shrink-0 ${
+          isActive
+            ? 'bg-[#f7ff00] text-slate-950 border-amber-500 font-black shadow-md ring-2 ring-amber-400/90 scale-[1.03]'
+            : 'bg-slate-200 hover:bg-slate-100 text-slate-600 font-medium border-transparent'
         }`;
+        if (isActive) {
+          tab.style.backgroundColor = '#f7ff00';
+        }
         tab.innerText = label;
         tab.onclick = () => {
           currentDate = dStr;
@@ -2326,10 +3066,10 @@
         const headerRow = document.createElement('div');
         headerRow.className = 'flex bg-slate-100 text-slate-700 font-semibold border-b border-slate-300 sticky-header';
         
-        let headerHtml = `<div class="w-24 sm:w-28 p-2 text-center bg-slate-200 border-r border-slate-300 shrink-0 sticky-col font-black flex items-center justify-center text-xs sm:text-sm text-slate-800">場地 / 時間</div>`;
+        let headerHtml = `<div class="w-20 sm:w-24 xl:w-28 p-1.5 sm:p-2 text-center bg-slate-200 border-r border-slate-300 shrink-0 sticky-col font-black flex items-center justify-center text-xs sm:text-sm text-slate-800">場地 / 時間</div>`;
         activeSlots.forEach(({ time }) => {
           const shortTime = time.replace(' ~ ', '-');
-          headerHtml += `<div class="flex-1 min-w-[70px] p-2 text-center border-r border-slate-200 text-xs sm:text-sm font-black font-mono leading-tight text-slate-800 tracking-tight flex items-center justify-center">${shortTime}</div>`;
+          headerHtml += `<div class="flex-1 min-w-[52px] p-1 sm:p-2 text-center border-r border-slate-200 text-[11px] sm:text-xs xl:text-sm font-black font-mono leading-tight text-slate-800 tracking-tight flex items-center justify-center">${shortTime}</div>`;
         });
         headerRow.innerHTML = headerHtml;
         gridTable.appendChild(headerRow);
@@ -2338,7 +3078,7 @@
           const row = document.createElement('div');
           row.className = 'flex flex-1 border-b border-slate-200 hover:bg-slate-50/50 transition min-h-[50px]';
 
-          let rowHtml = `<div class="w-24 sm:w-28 p-2 text-center bg-slate-100 font-black text-slate-800 border-r border-slate-300 shrink-0 sticky-col flex items-center justify-center text-xs sm:text-base">${courtName}</div>`;
+          let rowHtml = `<div class="w-20 sm:w-24 xl:w-28 p-1.5 sm:p-2 text-center bg-slate-100 font-black text-slate-800 border-r border-slate-300 shrink-0 sticky-col flex items-center justify-center text-xs sm:text-sm xl:text-base">${courtName}</div>`;
 
           activeSlots.forEach(({ time, originalIdx }) => {
             const slotKey = `${cIdx}_${originalIdx}`;
@@ -2359,16 +3099,16 @@
                 `;
               } else {
                 cellClass = 'bg-emerald-100/90 hover:bg-emerald-200/90 border-emerald-300 text-emerald-900';
-                const coachStr = booking.coach ? `<span class="text-xs block opacity-90 text-emerald-800 font-normal">(${booking.coach})</span>` : '';
+                const coachStr = booking.coach ? `<span class="text-[11px] xl:text-xs block opacity-90 text-emerald-800 font-normal truncate">(${booking.coach})</span>` : '';
                 contentHtml = `
-                  <div class="font-bold text-xs leading-tight truncate px-0.5">${booking.student}</div>
+                  <div class="font-bold text-xs xl:text-sm leading-tight truncate px-0.5 w-full">${booking.student}</div>
                   ${coachStr}
                   ${booking.timeNote ? `<div class="text-[10px] text-emerald-800 font-mono scale-95 leading-none mt-0.5">${booking.timeNote}</div>` : ''}
                 `;
               }
             } else {
               cellClass = 'bg-white hover:bg-slate-100 cursor-pointer';
-              contentHtml = `<div class="text-xs text-slate-400 font-medium select-none">可預約</div>`;
+              contentHtml = `<div class="text-[11px] xl:text-xs text-slate-400 font-medium select-none">可預約</div>`;
             }
 
             if (isSelected) {
@@ -2376,7 +3116,7 @@
             }
 
             rowHtml += `
-              <div class="flex-1 min-w-[70px] p-1 border-r border-slate-200 flex flex-col justify-center items-center text-center transition relative ${cellClass}" data-key="${slotKey}">
+              <div class="flex-1 min-w-[52px] p-1 border-r border-slate-200 flex flex-col justify-center items-center text-center transition relative overflow-hidden ${cellClass}" data-key="${slotKey}">
                 ${contentHtml}
                 ${isSelected ? `<i class="fa-solid fa-circle-check absolute top-0.5 right-0.5 text-emerald-700 text-[10px]"></i>` : ''}
               </div>
@@ -2426,6 +3166,8 @@
       updateAdminUIState();
       updateViewModeUI();
       renderDateTabs();
+      renderPublicAnnouncementUI();
+      startCountdownLoop();
       setupFirestoreListener();
       updateActionBar();
     }
@@ -2648,6 +3390,7 @@
       if (!window.db) {
         loadLocalStorageFallback();
         renderAll();
+        maybeAutoOpenAnnouncementModal();
       }
     }, 500);
   </script>

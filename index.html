@@ -50,7 +50,6 @@
     .sticky-col { position: sticky; left: 0; z-index: 20; }
     .sticky-header { position: sticky; top: 0; z-index: 10; }
 
-    /* 內嵌區塊內部的往返彈性跑馬燈 */
     @keyframes bounceMarquee {
       0% { transform: translateX(8%); }
       100% { transform: translateX(-8%); }
@@ -73,7 +72,6 @@
       animation: floatSticker 2.6s ease-in-out infinite;
     }
 
-    /* 公告編輯器 placeholder 與樣式 */
     #admin-ann-content-editor:empty:before {
       content: attr(data-placeholder);
       color: #94a3b8;
@@ -86,7 +84,6 @@
       word-break: break-word;
     }
 
-    /* 圖片拖拉縮放控制點 */
     .resize-handle-se {
       position: absolute;
       right: -7px;
@@ -133,7 +130,6 @@
         <h1 class="font-bold text-xs sm:text-base leading-tight flex flex-wrap items-center gap-1.5">
           <span>羽球場預約統計系統</span>
           <span id="mode-badge" class="text-[10px] bg-emerald-700/80 text-emerald-200 px-1.5 py-0.5 rounded font-normal border border-emerald-600 shrink-0">Excel 模式</span>
-          <!-- 即時線上人數資訊欄 -->
           <span id="online-status-badge" class="text-[10px] sm:text-[11px] bg-emerald-950/80 text-lime-300 px-2 py-0.5 rounded-full font-bold border border-lime-400/50 flex items-center gap-1.5 shadow-inner shrink-0" title="目前正在線瀏覽此系統的人數">
             <span class="relative flex h-2 w-2">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime-400 opacity-75"></span>
@@ -185,7 +181,6 @@
 
   <!-- 公開公告摘要與倒數計時器即時資訊列 -->
   <div id="public-top-notice-bar" class="bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 text-white px-2.5 sm:px-4 py-1.5 border-b border-sky-800/80 flex flex-wrap items-center justify-between gap-2 shrink-0 text-xs shadow">
-    <!-- 左側：公告摘要條 -->
     <div id="top-announcement-summary" class="flex items-center gap-2 min-w-0 flex-1 cursor-pointer group" title="點擊查看完整公告與教練簡介">
       <span id="top-announcement-sticker" class="text-base sm:text-lg shrink-0 group-hover:scale-110 transition">📢</span>
       <span class="bg-sky-400 text-slate-950 font-black px-1.5 py-0.5 rounded text-[10px] sm:text-xs shrink-0">最新公告</span>
@@ -194,7 +189,6 @@
       </span>
     </div>
 
-    <!-- 右側：即時倒數計時器 -->
     <div id="top-countdown-box" class="flex items-center gap-1.5 bg-amber-400/15 border border-amber-400/50 px-2.5 py-0.5 rounded-lg shrink-0 ml-auto">
       <i class="fa-solid fa-hourglass-half text-amber-300 animate-pulse"></i>
       <span id="top-countdown-title" class="text-amber-200 font-bold text-[11px] sm:text-xs">活動倒數：</span>
@@ -203,9 +197,7 @@
   </div>
 
   <!-- Quick Date Tabs Bar -->
-  <nav class="bg-slate-200 border-b border-slate-300 px-2 py-1 flex items-center gap-1.5 overflow-x-auto text-xs shrink-0" id="date-tabs-bar">
-    <!-- JS Rendered Tabs (選取的當日日期底色為螢光黃) -->
-  </nav>
+  <nav class="bg-slate-200 border-b border-slate-300 px-2 py-1 flex items-center gap-1.5 overflow-x-auto text-xs shrink-0" id="date-tabs-bar"></nav>
 
   <!-- Event Header Notice Banner -->
   <div class="bg-indigo-950 text-white px-2.5 sm:px-4 py-1.5 border-b border-indigo-900 flex flex-wrap items-center justify-between gap-2 shrink-0 shadow-inner">
@@ -224,12 +216,10 @@
     </div>
 
     <div class="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap">
-      <!-- 管理員專屬：公告與倒數設定 -->
       <button id="open-board-manage-btn" class="hidden bg-sky-500 hover:bg-sky-400 text-slate-950 font-extrabold px-2.5 py-1.5 rounded-lg text-xs transition shadow border border-sky-300 flex items-center gap-1">
         <i class="fa-solid fa-bullhorn"></i> 公告與倒數設定
       </button>
 
-      <!-- 管理員專屬：快速文字預約 -->
       <button id="open-quick-parse-btn" class="hidden bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold px-2.5 py-1.5 rounded-lg text-xs transition shadow border border-fuchsia-400 flex items-center gap-1">
         <i class="fa-solid fa-wand-magic-sparkles"></i> 快速文字預約
       </button>
@@ -238,7 +228,6 @@
         <i class="fa-solid fa-chart-pie"></i> 統計報表
       </button>
 
-      <!-- 管理員專屬：隱藏今日所有預約時段 -->
       <label id="hide-day-toggle-wrapper" class="hidden items-center gap-1.5 bg-rose-900/80 hover:bg-rose-900 px-2.5 py-1.5 rounded-lg border border-rose-700 text-xs text-rose-100 cursor-pointer select-none transition">
         <input type="checkbox" id="hide-day-checkbox" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500 accent-rose-600 cursor-pointer">
         <span class="font-bold text-rose-200"><i class="fa-solid fa-eye-slash mr-1"></i>隱藏當日所有預約時段</span>
@@ -249,7 +238,6 @@
         <span class="font-bold text-amber-300">🌙 僅顯示晚上 (18:00-21:00)</span>
       </label>
 
-      <!-- 管理員專屬：學員年級總表 -->
       <button id="manage-students-btn" class="hidden bg-teal-700 hover:bg-teal-600 text-white font-medium px-2.5 py-1.5 rounded-lg text-xs transition shadow border border-teal-500 flex items-center gap-1">
         <i class="fa-solid fa-graduation-cap"></i> 學員年級總表
       </button>
@@ -270,9 +258,7 @@
   <!-- Main Excel / Mobile Grid Area -->
   <main class="flex-1 overflow-auto grid-scroll p-2 sm:p-3 lg:p-4 pb-20 bg-slate-100 flex flex-col w-full">
     <div id="main-container" class="bg-white rounded-lg shadow-md border border-slate-300 overflow-x-auto flex-1 flex flex-col w-full">
-      <div id="grid-table" class="divide-y divide-slate-200 flex-1 flex flex-col w-full min-w-[1420px] lg:min-w-0">
-        <!-- JS Dynamic Table Construction -->
-      </div>
+      <div id="grid-table" class="divide-y divide-slate-200 flex-1 flex flex-col w-full min-w-[1420px] lg:min-w-0"></div>
     </div>
   </main>
 
@@ -289,12 +275,9 @@
     <button id="cancel-selection-btn" class="text-xs text-slate-400 hover:text-white px-2 py-1">取消</button>
   </div>
 
-  <!-- ========================================================= -->
-  <!-- 📢 一般使用者開啟網頁可見：公告系統、貼圖、教練簡介與倒數視窗 -->
-  <!-- ========================================================= -->
+  <!-- 公開公告視窗 -->
   <div id="public-announcement-modal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
     <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-      <!-- Top Banner -->
       <div class="p-4 sm:p-5 bg-gradient-to-r from-sky-800 via-indigo-900 to-emerald-900 text-white flex items-center justify-between shrink-0">
         <div class="flex items-center gap-3 min-w-0">
           <div id="modal-announcement-sticker" class="text-3xl sm:text-4xl bg-white/15 p-2 rounded-xl border border-white/20 shadow-inner sticker-bounce shrink-0">🏸</div>
@@ -308,9 +291,7 @@
         </button>
       </div>
 
-      <!-- Body -->
       <div class="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1 bg-slate-50">
-        <!-- 倒數計時器卡片 -->
         <div id="modal-countdown-card" class="bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 rounded-xl p-3.5 shadow-md border border-amber-300 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div class="flex items-center gap-2 font-black text-xs sm:text-sm">
             <span class="text-xl">⏳</span>
@@ -321,7 +302,6 @@
           </div>
         </div>
 
-        <!-- 公告內文與貼圖展示（支援自訂文字大小/顏色 + 圖片大小/重新排版） -->
         <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm space-y-3">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2">
             <span class="text-xs font-extrabold text-sky-800 flex items-center gap-1.5">
@@ -337,7 +317,6 @@
           </div>
         </div>
 
-        <!-- 教練團簡介展示區 -->
         <div id="modal-coach-intro-section" class="space-y-2.5">
           <div class="flex items-center justify-between">
             <h4 class="text-xs sm:text-sm font-black text-slate-800 flex items-center gap-1.5">
@@ -345,13 +324,10 @@
             </h4>
             <span class="text-[11px] text-slate-500">專業個別指導・歡迎預約諮詢</span>
           </div>
-          <div id="modal-coach-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <!-- JS 動態渲染教練簡介卡片 -->
-          </div>
+          <div id="modal-coach-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
         </div>
       </div>
 
-      <!-- Footer：下次開啟不再自動顯示此則公告 -->
       <div class="p-3.5 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 shrink-0">
         <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer select-none hover:text-slate-950">
           <input type="checkbox" id="dont-show-same-ann-checkbox" class="w-4 h-4 accent-emerald-600 rounded cursor-pointer">
@@ -364,9 +340,7 @@
     </div>
   </div>
 
-  <!-- ========================================================= -->
-  <!-- 🛠️ 管理者專屬：公告系統（貼圖、教練簡介）與倒數計時器設定 Modal -->
-  <!-- ========================================================= -->
+  <!-- 管理者專屬：公告系統與倒數計時器設定 Modal -->
   <div id="board-manage-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
     <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <div class="p-4 bg-sky-800 text-white flex items-center justify-between shrink-0">
@@ -380,7 +354,6 @@
       </div>
 
       <div class="p-4 space-y-5 overflow-y-auto flex-1">
-        <!-- 區塊一：倒數計時器設定 -->
         <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 space-y-3">
           <div class="flex items-center justify-between">
             <h4 class="font-black text-xs sm:text-sm text-amber-900 flex items-center gap-1.5">
@@ -409,7 +382,6 @@
           </div>
         </div>
 
-        <!-- 區塊二：公告內容與貼圖設定 -->
         <div class="bg-sky-50/70 border border-sky-200 rounded-xl p-3.5 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <h4 class="font-black text-xs sm:text-sm text-sky-900 flex items-center gap-1.5">
@@ -438,15 +410,11 @@
             </div>
           </div>
 
-          <!-- 貼圖快速點選盤 -->
           <div>
             <label class="block text-[11px] font-bold text-slate-600 mb-1">點選貼圖（可設為主貼圖或插入內文）：</label>
-            <div id="sticker-picker-grid" class="flex flex-wrap gap-1.5 bg-white p-2 rounded-lg border border-slate-200">
-              <!-- JS 動態生成貼圖按鈕 -->
-            </div>
+            <div id="sticker-picker-grid" class="flex flex-wrap gap-1.5 bg-white p-2 rounded-lg border border-slate-200"></div>
           </div>
 
-          <!-- 公告詳細內文（支援文字大小、顏色、粗體、底線、螢光標記） -->
           <div class="space-y-1.5">
             <div class="flex flex-wrap items-center justify-between gap-1">
               <label class="block text-xs font-bold text-slate-700">
@@ -454,12 +422,10 @@
               </label>
             </div>
 
-            <!-- 文字編輯工具列 -->
             <div class="flex flex-wrap items-center gap-1.5 bg-white p-2 rounded-t-lg border border-b-0 border-slate-300 text-xs">
-              <!-- 文字大小 -->
               <div class="flex items-center gap-1 bg-slate-50 px-1.5 py-1 rounded border border-slate-200">
                 <i class="fa-solid fa-text-height text-slate-500 text-[11px]"></i>
-                <select id="ann-font-size-select" class="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer" title="設定預設或選取文字的大小">
+                <select id="ann-font-size-select" class="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer">
                   <option value="12px">12px (小)</option>
                   <option value="14px" selected>14px (標準)</option>
                   <option value="16px">16px (中大)</option>
@@ -469,47 +435,35 @@
                 </select>
               </div>
 
-              <!-- 常用文字顏色色票 -->
-              <div class="flex items-center gap-1 bg-slate-50 px-1.5 py-1 rounded border border-slate-200" title="點選變更文字顏色（有反白則套用選取文字，未反白則套用整段）">
+              <div class="flex items-center gap-1 bg-slate-50 px-1.5 py-1 rounded border border-slate-200">
                 <span class="text-[11px] font-bold text-slate-500 mr-0.5">字色:</span>
-                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#334155" data-color="#334155" title="深灰(預設)"></button>
-                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#dc2626" data-color="#dc2626" title="醒目紅"></button>
-                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#ea580c" data-color="#ea580c" title="活力橘"></button>
-                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#ca8a04" data-color="#ca8a04" title="琥珀金"></button>
-                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#059669" data-color="#059669" title="翠綠色"></button>
-                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#2563eb" data-color="#2563eb" title="寶藍色"></button>
-                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#7c3aed" data-color="#7c3aed" title="靛紫色"></button>
-                <label class="cursor-pointer flex items-center ml-0.5 text-[11px] text-sky-700 font-bold hover:text-sky-900" title="自訂文字顏色">
+                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#334155" data-color="#334155"></button>
+                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#dc2626" data-color="#dc2626"></button>
+                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#ea580c" data-color="#ea580c"></button>
+                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#ca8a04" data-color="#ca8a04"></button>
+                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#059669" data-color="#059669"></button>
+                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#2563eb" data-color="#2563eb"></button>
+                <button type="button" class="ann-color-swatch w-4 h-4 rounded-full border border-slate-300 shadow-sm hover:scale-110 transition" style="background:#7c3aed" data-color="#7c3aed"></button>
+                <label class="cursor-pointer flex items-center ml-0.5 text-[11px] text-sky-700 font-bold hover:text-sky-900">
                   <i class="fa-solid fa-palette"></i>
                   <input type="color" id="ann-custom-color-picker" value="#334155" class="w-0 h-0 opacity-0 absolute">
                 </label>
               </div>
 
-              <!-- 粗體 / 底線 / 螢光標記 / 清除格式 -->
               <div class="flex items-center gap-1">
-                <button type="button" id="ann-bold-btn" class="px-2 py-1 bg-slate-50 hover:bg-sky-100 border border-slate-200 rounded font-black text-slate-700 transition" title="粗體 (選取文字)">
-                  B
-                </button>
-                <button type="button" id="ann-underline-btn" class="px-2 py-1 bg-slate-50 hover:bg-sky-100 border border-slate-200 rounded underline text-slate-700 transition" title="底線 (選取文字)">
-                  U
-                </button>
-                <button type="button" id="ann-highlight-btn" class="px-2 py-1 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded font-bold text-amber-900 transition" title="螢光黃底標記 (選取文字)">
-                  <i class="fa-solid fa-highlighter text-[11px]"></i>
-                </button>
-                <button type="button" id="ann-clear-format-btn" class="px-2 py-1 bg-slate-50 hover:bg-rose-100 border border-slate-200 rounded text-slate-600 hover:text-rose-700 transition" title="重設為標準大小與深灰字色">
-                  <i class="fa-solid fa-eraser text-[11px]"></i>
-                </button>
+                <button type="button" id="ann-bold-btn" class="px-2 py-1 bg-slate-50 hover:bg-sky-100 border border-slate-200 rounded font-black text-slate-700 transition">B</button>
+                <button type="button" id="ann-underline-btn" class="px-2 py-1 bg-slate-50 hover:bg-sky-100 border border-slate-200 rounded underline text-slate-700 transition">U</button>
+                <button type="button" id="ann-highlight-btn" class="px-2 py-1 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded font-bold text-amber-900 transition"><i class="fa-solid fa-highlighter text-[11px]"></i></button>
+                <button type="button" id="ann-clear-format-btn" class="px-2 py-1 bg-slate-50 hover:bg-rose-100 border border-slate-200 rounded text-slate-600 hover:text-rose-700 transition"><i class="fa-solid fa-eraser text-[11px]"></i></button>
               </div>
             </div>
 
-            <!-- 富文本編輯框 -->
             <div id="admin-ann-content-editor" contenteditable="true" data-placeholder="輸入公告說明文字..." class="w-full p-2.5 bg-white border border-slate-300 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-sky-500 leading-relaxed whitespace-pre-wrap" style="font-size: 14px; color: #334155;"></div>
           </div>
 
-          <!-- 附加貼圖 / 海報圖片：支援本機檔案 + 拖拉放大縮小 + 重新排版 -->
           <div class="space-y-2.5 pt-1 border-t border-sky-200/80">
             <label class="block text-xs font-bold text-slate-700">
-              附加貼圖 / 海報圖片 <span class="text-slate-400 font-normal">(選填，上傳後可直接拖拉縮放大小並調整排版位置)</span>
+              附加貼圖 / 海報圖片 <span class="text-slate-400 font-normal">(選填)</span>
             </label>
             <div class="flex flex-wrap items-center gap-2">
               <label class="cursor-pointer bg-sky-600 hover:bg-sky-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition shadow-sm flex items-center gap-1.5 shrink-0">
@@ -524,67 +478,44 @@
             </div>
             <input type="text" id="admin-ann-image-url" placeholder="或貼上外部圖片網址 (https://...)" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono">
             
-            <!-- 圖片排版與拖拉放大縮小操作區 -->
             <div id="admin-ann-image-preview-wrap" class="hidden bg-white p-3 rounded-xl border border-slate-200 space-y-3 shadow-inner">
-              <!-- 排版位置與對齊控制列 -->
               <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100 text-xs">
                 <div class="flex flex-wrap items-center gap-1">
                   <span class="font-bold text-slate-700 mr-1"><i class="fa-solid fa-table-columns text-sky-600 mr-1"></i>圖文排版:</span>
-                  <button type="button" class="ann-layout-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-layout="bottom" title="文字在上方，圖片在下方">
-                    <i class="fa-solid fa-arrow-down mr-0.5"></i>圖在下方
-                  </button>
-                  <button type="button" class="ann-layout-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-layout="top" title="圖片在上方，文字在下方">
-                    <i class="fa-solid fa-arrow-up mr-0.5"></i>圖在上方
-                  </button>
-                  <button type="button" class="ann-layout-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-layout="left" title="圖片在左側，文字在右側">
-                    <i class="fa-solid fa-arrow-left mr-0.5"></i>圖左文右
-                  </button>
-                  <button type="button" class="ann-layout-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-layout="right" title="文字在左側，圖片在右側">
-                    <i class="fa-solid fa-arrow-right mr-0.5"></i>文左圖右
-                  </button>
+                  <button type="button" class="ann-layout-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-layout="bottom"><i class="fa-solid fa-arrow-down mr-0.5"></i>圖在下方</button>
+                  <button type="button" class="ann-layout-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-layout="top"><i class="fa-solid fa-arrow-up mr-0.5"></i>圖在上方</button>
+                  <button type="button" class="ann-layout-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-layout="left"><i class="fa-solid fa-arrow-left mr-0.5"></i>圖左文右</button>
+                  <button type="button" class="ann-layout-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-layout="right"><i class="fa-solid fa-arrow-right mr-0.5"></i>文左圖右</button>
                 </div>
 
-                <!-- 對齊方式（上下排版時適用） -->
                 <div id="ann-align-controls" class="flex items-center gap-1">
                   <span class="text-[11px] text-slate-500">對齊:</span>
-                  <button type="button" class="ann-align-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-align="left" title="靠左對齊">
-                    <i class="fa-solid fa-align-left"></i>
-                  </button>
-                  <button type="button" class="ann-align-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-align="center" title="置中對齊">
-                    <i class="fa-solid fa-align-center"></i>
-                  </button>
-                  <button type="button" class="ann-align-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-align="right" title="靠右對齊">
-                    <i class="fa-solid fa-align-right"></i>
-                  </button>
+                  <button type="button" class="ann-align-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-align="left"><i class="fa-solid fa-align-left"></i></button>
+                  <button type="button" class="ann-align-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-align="center"><i class="fa-solid fa-align-center"></i></button>
+                  <button type="button" class="ann-align-btn px-2 py-1 rounded border text-[11px] font-bold transition" data-align="right"><i class="fa-solid fa-align-right"></i></button>
                 </div>
               </div>
 
-              <!-- 圖片尺寸滑桿與重設 -->
               <div class="flex flex-wrap items-center gap-2 text-xs bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
                 <span class="font-bold text-slate-700 shrink-0"><i class="fa-solid fa-up-right-and-down-left-from-center text-sky-600 mr-1"></i>拖拉或滑桿調整大小:</span>
                 <input type="range" id="admin-ann-img-width-slider" min="80" max="560" value="240" class="flex-1 min-w-[100px] accent-sky-600 cursor-pointer">
                 <span id="admin-ann-img-size-badge" class="font-mono font-bold text-sky-800 bg-sky-100 px-2 py-0.5 rounded text-[11px] shrink-0">240 px</span>
-                <button type="button" id="admin-ann-img-reset-size-btn" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 px-2 py-0.5 rounded font-bold transition shrink-0">
-                  重設大小
-                </button>
+                <button type="button" id="admin-ann-img-reset-size-btn" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 px-2 py-0.5 rounded font-bold transition shrink-0">重設大小</button>
               </div>
 
-              <!-- 可直接拖拉放大縮小的預覽框 -->
               <div id="admin-ann-preview-stage" class="bg-slate-100/80 border border-dashed border-slate-300 rounded-lg p-3 overflow-x-auto flex justify-center">
                 <div id="admin-ann-resizable-box" class="relative inline-block border-2 border-sky-500/80 rounded-lg bg-white shadow-sm select-none" style="width: 240px; max-width: 100%;">
                   <img id="admin-ann-image-preview" src="" alt="圖片預覽" class="w-full h-auto rounded-md block pointer-events-none">
-                  <div id="admin-ann-resize-handle-e" class="resize-handle-e" title="左右拖拉調整寬度"></div>
-                  <div id="admin-ann-resize-handle-se" class="resize-handle-se" title="拖拉角落放大或縮小圖片">
+                  <div id="admin-ann-resize-handle-e" class="resize-handle-e"></div>
+                  <div id="admin-ann-resize-handle-se" class="resize-handle-se">
                     <i class="fa-solid fa-up-right-and-down-left-from-center text-[8px] text-white"></i>
                   </div>
                 </div>
               </div>
-              <p class="text-[11px] text-slate-500 text-center">提示：直接拖拉圖片右側或右下角藍色圓點即可自由放大縮小</p>
             </div>
           </div>
         </div>
 
-        <!-- 區塊三：教練團簡介編輯 -->
         <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 space-y-3">
           <div class="flex items-center justify-between">
             <h4 class="font-black text-xs sm:text-sm text-emerald-900 flex items-center gap-1.5">
@@ -595,10 +526,7 @@
               <span>在公告中展示教練簡介</span>
             </label>
           </div>
-          <p class="text-[11px] text-slate-600">可為每位教練設定專屬代表貼圖、專長標籤與教學簡介（與教練名單自動同步）：</p>
-          <div id="admin-coach-profiles-list" class="space-y-2.5">
-            <!-- JS 動態生成教練簡介編輯列 -->
-          </div>
+          <div id="admin-coach-profiles-list" class="space-y-2.5"></div>
         </div>
       </div>
 
@@ -636,7 +564,6 @@
           </div>
         </div>
 
-        <!-- 1. 個人練習欄位 -->
         <div id="personal-fields" class="space-y-3">
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">
@@ -644,7 +571,6 @@
               <span class="text-[10px] text-amber-700 font-normal ml-1">(1對2合練請用斜線分隔，如：以家/非非)</span>
             </label>
             <input type="text" id="input-student" placeholder="例如：以家/非非 或 峻誠" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500">
-            <!-- 自動帶入年級提示（僅管理員可見） -->
             <div id="auto-grade-preview" class="hidden mt-1.5 text-[11px] px-2 py-1 rounded bg-teal-50 border border-teal-200 text-teal-800 flex items-center justify-between">
               <span id="auto-grade-preview-text"></span>
               <button type="button" id="quick-open-grade-master-btn" class="text-[10px] underline font-bold text-teal-700 hover:text-teal-900 ml-2 shrink-0">設定總表</button>
@@ -667,12 +593,10 @@
           </div>
         </div>
 
-        <!-- 2. 社團包場欄位 -->
         <div id="club-fields" class="hidden">
           <p class="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-md border border-amber-200">選取時段將標記為「社團包場」，適用於團體活動或社團包場。</p>
         </div>
 
-        <!-- 3. 其他用途欄位 -->
         <div id="other-fields" class="hidden space-y-3">
           <p class="text-xs text-purple-700 bg-purple-50 p-2.5 rounded-md border border-purple-200">選取時段將標記為「其他用途」，預約後將以紫色呈顯。</p>
           <div>
@@ -715,7 +639,6 @@
           </button>
         </div>
 
-        <!-- 搜尋與篩選列 -->
         <div class="flex gap-2">
           <input type="text" id="student-grade-search" placeholder="搜尋學員姓名..." class="flex-1 text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500">
           <select id="student-grade-filter" class="text-xs p-2 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500 font-medium">
@@ -732,12 +655,9 @@
           </select>
         </div>
 
-        <div class="space-y-2" id="student-grade-list">
-          <!-- JS 動態寫入 -->
-        </div>
+        <div class="space-y-2" id="student-grade-list"></div>
       </div>
 
-      <!-- 底部新增學員列 -->
       <div class="p-3 bg-slate-50 border-t flex gap-2 items-center shrink-0">
         <input type="text" id="new-student-grade-name" placeholder="輸入學員姓名..." class="flex-1 text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500">
         <select id="new-student-grade-select" class="text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500 font-medium">
@@ -782,14 +702,14 @@
 11/14(六) 14:00-15:00(新增)</pre>
           <ul class="text-[11px] text-slate-600 list-disc pl-4 space-y-0.5">
             <li>第一行填寫 <b>選手姓名(教練名)</b>，支援 1對2 合練如 <code>以家/非非(彭教練)</code>，年級將自動由總表帶入。</li>
-            <li>第二行（可多行）填寫 <b>日期(星期) 時間(新增 或 取消)</b>，系統將自動尋找空場地完成預約或取消對應預約。</li>
-            <li>支援全形文字或符號（如 <code>１１／１４（六）１４：００－１５：００（新增）</code>），系統會自動轉為半形比對，避免重複預約。</li>
+            <li>第二行（可多行）填寫 <b>日期(星期) 時間(新增 或 取消)</b>，省略 <code>(新增)</code> 亦預設為新增預約。</li>
+            <li>支援全形文字、全形括號與任意空白，系統會自動轉為半形比對，避免重複預約。</li>
           </ul>
         </div>
 
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">請貼上預約文字內容：</label>
-          <textarea id="quick-parse-textarea" rows="6" placeholder="冬孜(張教練)&#10;11/14(六) 14:00-15:00(新增)" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fuchsia-500 font-mono leading-relaxed"></textarea>
+          <textarea id="quick-parse-textarea" rows="6" placeholder="瑀珊（張教練）&#10;11/7 （六）07:00-08:00&#10;11/14 (六) 07:00-08:00&#10;11/21 (六) 07:00-08:00 (新增)" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fuchsia-500 font-mono leading-relaxed"></textarea>
         </div>
 
         <div id="quick-parse-result" class="hidden space-y-1.5 text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-200 max-h-40 overflow-y-auto"></div>
@@ -834,10 +754,7 @@
       
       <div class="p-4 space-y-3 flex-1 overflow-y-auto">
         <p class="text-[11px] text-slate-500 bg-slate-50 p-2 rounded border">在此可維護教練名單，並為每位教練設定專屬的 **1對1** 與 **1對2** 每小時收費標準（教練簡介可於「公告與倒數設定」編輯）。</p>
-        
-        <div class="space-y-2.5" id="coach-manage-list">
-          <!-- JS 動態寫入 -->
-        </div>
+        <div class="space-y-2.5" id="coach-manage-list"></div>
       </div>
 
       <div class="p-3 bg-slate-50 border-t flex gap-2 items-center shrink-0">
@@ -863,7 +780,6 @@
       </div>
 
       <div class="p-4 space-y-4 flex-1 overflow-y-auto">
-        <!-- 控制與費率提示區域 -->
         <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-3">
           <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
             <div class="sm:col-span-3">
@@ -876,9 +792,7 @@
 
             <div class="sm:col-span-3">
               <label class="block text-xs font-bold text-slate-700 mb-1">對象名稱</label>
-              <select id="stats-target-select" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500">
-                <!-- 動態產出 -->
-              </select>
+              <select id="stats-target-select" class="w-full text-xs p-2 bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500"></select>
             </div>
 
             <div class="sm:col-span-6">
@@ -889,7 +803,6 @@
                   <option value="custom">自訂日期區間</option>
                 </select>
 
-                <!-- 僅當日統計專用日期切換器 -->
                 <div id="single-date-switcher" class="flex items-center bg-white border border-slate-300 rounded-md p-0.5 shrink-0">
                   <button type="button" id="stats-prev-day-btn" class="px-2 py-1 rounded hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition" title="前一天">
                     <i class="fa-solid fa-chevron-left text-xs"></i>
@@ -923,7 +836,6 @@
           </div>
         </div>
 
-        <!-- 統計摘要卡片 -->
         <div id="stats-summary-card" class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 flex flex-wrap items-center justify-between gap-2">
           <div>
             <span class="font-bold">統計對象：</span><span id="stats-target-label" class="font-bold text-amber-700 text-sm">--</span>
@@ -935,7 +847,6 @@
           </div>
         </div>
 
-        <!-- 詳細紀錄表格 -->
         <div class="border border-slate-200 rounded-lg overflow-x-auto relative min-h-[140px]">
           <div id="stats-loading-overlay" class="hidden absolute inset-0 bg-white/80 backdrop-blur-[1px] flex items-center justify-center z-10">
             <div class="text-xs font-bold text-amber-700 flex items-center gap-2">
@@ -955,9 +866,7 @@
                 <th class="p-2">原始輸入/時間備註</th>
               </tr>
             </thead>
-            <tbody id="stats-table-body" class="divide-y divide-slate-100">
-              <!-- JS 動態寫入 -->
-            </tbody>
+            <tbody id="stats-table-body" class="divide-y divide-slate-100"></tbody>
           </table>
         </div>
       </div>
@@ -967,7 +876,7 @@
           <button id="export-excel-btn" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5">
             <i class="fa-solid fa-file-excel text-sm"></i> 📥 匯出當前對象報表
           </button>
-          <button id="export-all-students-excel-btn" class="px-3 py-1.5 bg-indigo-700 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5" title="自動選取該時間區間內全部個練學員，依教練分組輸出完整總表">
+          <button id="export-all-students-excel-btn" class="px-3 py-1.5 bg-indigo-700 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5">
             <i class="fa-solid fa-users-rectangle text-sm"></i> 📥 匯出全體學員總表 (.xlsx)
           </button>
         </div>
@@ -1007,17 +916,11 @@
     function toHalfWidth(str) {
       if (str === null || str === undefined) return '';
       return String(str)
-        // 全形 ASCII（包含數字０-９、英文Ａ-Ｚａ-ｚ、括號（）、斜線／、冒號：、減號－等）轉半形
         .replace(/[\uFF01-\uFF5E]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
-        // 全形空白轉半形空白
         .replace(/\u3000/g, ' ')
-        // 各種破折號、波浪號統一轉半形減號 -
         .replace(/[～~–—−‐‑‒―]/g, '-')
-        // 全形頓號、逗號統一轉半形逗號
         .replace(/[、，]/g, ',')
-        // 清理斜線前後多餘空白（例如 "以家 / 非非" -> "以家/非非"）
         .replace(/\s*\/\s*/g, '/')
-        // 連續空白壓縮為單一空白
         .replace(/\s+/g, ' ')
         .trim();
     }
@@ -1028,7 +931,6 @@
     let currentEditKey = null; 
     let currentBookingType = 'personal';
 
-    // 視窗自動自適應模式判斷
     let userPinnedViewMode = localStorage.getItem('badminton_view_mode_pinned') === 'true';
     let isMobileView = userPinnedViewMode
       ? localStorage.getItem('badminton_view_mode') === 'mobile'
@@ -1177,9 +1079,6 @@
       return getSingleStudentGrade(raw, fallbackGrade);
     }
 
-    // ==========================================
-    // 🟢 目前線上人數即時追蹤 (Firestore Presence)
-    // ==========================================
     function setupOnlinePresence() {
       if (!window.db || !window.fsCollection) return;
 
@@ -1382,7 +1281,6 @@
     const dayEventMarquee = document.getElementById('day-event-marquee');
     const marqueeText = document.getElementById('marquee-text');
 
-    // Public Announcement & Countdown DOM
     const publicTopNoticeBar = document.getElementById('public-top-notice-bar');
     const topAnnouncementSummary = document.getElementById('top-announcement-summary');
     const topAnnouncementSticker = document.getElementById('top-announcement-sticker');
@@ -1409,7 +1307,6 @@
     const modalCoachIntroSection = document.getElementById('modal-coach-intro-section');
     const modalCoachCardsGrid = document.getElementById('modal-coach-cards-grid');
 
-    // Admin Board Manage DOM
     const openBoardManageBtn = document.getElementById('open-board-manage-btn');
     const boardManageModal = document.getElementById('board-manage-modal');
     const closeBoardManageBtn = document.getElementById('close-board-manage-btn');
@@ -1425,7 +1322,6 @@
     const adminAnnTitle = document.getElementById('admin-ann-title');
     const stickerPickerGrid = document.getElementById('sticker-picker-grid');
 
-    // 富文本編輯器相關 DOM
     const adminAnnContentEditor = document.getElementById('admin-ann-content-editor');
     const annFontSizeSelect = document.getElementById('ann-font-size-select');
     const annCustomColorPicker = document.getElementById('ann-custom-color-picker');
@@ -1434,7 +1330,6 @@
     const annHighlightBtn = document.getElementById('ann-highlight-btn');
     const annClearFormatBtn = document.getElementById('ann-clear-format-btn');
 
-    // 圖片上傳、縮放與排版 DOM
     const adminAnnImageFile = document.getElementById('admin-ann-image-file');
     const adminAnnFileStatus = document.getElementById('admin-ann-file-status');
     const adminAnnClearImageBtn = document.getElementById('admin-ann-clear-image-btn');
@@ -1452,10 +1347,9 @@
     const adminAnnShowCoaches = document.getElementById('admin-ann-show-coaches');
     const adminCoachProfilesList = document.getElementById('admin-coach-profiles-list');
 
-    // 管理者圖片編輯暫存狀態
     let currentAdminImageWidth = 240;
-    let currentAdminImageLayout = 'bottom'; // 'bottom' | 'top' | 'left' | 'right'
-    let currentAdminImageAlign = 'center';  // 'left' | 'center' | 'right'
+    let currentAdminImageLayout = 'bottom';
+    let currentAdminImageAlign = 'center';
 
     const openQuickParseBtn = document.getElementById('open-quick-parse-btn');
     const quickParseModal = document.getElementById('quick-parse-modal');
@@ -1562,7 +1456,7 @@
     const modalSlotsSummary = document.getElementById('modal-slots-summary');
 
     // ==========================================
-    // ✍️ 公告富文本工具列（文字大小、顏色、格式）
+    // ✍️ 公告富文本工具列
     // ==========================================
     function sanitizeAnnouncementHtml(html) {
       if (!html) return '';
@@ -1614,7 +1508,6 @@
         sel.addRange(newRange);
         return true;
       } catch (e) {
-        console.warn('選取套用樣式失敗:', e);
         return false;
       }
     }
@@ -1688,9 +1581,6 @@
       adminAnnContentEditor.focus();
     });
 
-    // ==========================================
-    // 🖼️ 圖片拖拉放大縮小 & 重新排版控制
-    // ==========================================
     function setAdminImageSize(pxWidth) {
       const clamped = Math.max(80, Math.min(600, Math.round(Number(pxWidth) || 240)));
       currentAdminImageWidth = clamped;
@@ -1803,9 +1693,6 @@
     bindDragResizeHandle(adminAnnResizeHandleSe);
     bindDragResizeHandle(adminAnnResizeHandleE);
 
-    // ==========================================
-    // 📢 公告系統、教練簡介與倒數計時器邏輯
-    // ==========================================
     function getAnnouncementSignature(ann) {
       if (!ann) return '';
       const raw = `${ann.title || ''}||${ann.sticker || ''}||${ann.contentHtml || ann.content || ''}||${ann.imageUrl || ''}||${ann.imageWidth || ''}||${ann.imageLayout || ''}`;
@@ -2007,9 +1894,6 @@
     closePublicAnnouncementBtn.addEventListener('click', closePublicAnnouncementModal);
     confirmPublicAnnouncementBtn.addEventListener('click', closePublicAnnouncementModal);
 
-    // ==========================================
-    // 📁 本機圖片讀取與最佳化壓縮處理
-    // ==========================================
     function updateAdminImagePreview(srcValue, fileLabel = '') {
       const cleanSrc = (srcValue || '').trim();
       if (cleanSrc) {
@@ -2092,7 +1976,6 @@
         adminAnnImageUrl.value = compressedDataUrl;
         updateAdminImagePreview(compressedDataUrl, `已選取：${file.name}`);
       } catch (err) {
-        console.error(err);
         alert('讀取本機圖片失敗，請確認檔案是否損毀或換一張圖片試試！');
         adminAnnFileStatus.innerText = '讀取失敗';
       } finally {
@@ -2152,7 +2035,6 @@
         btn.type = 'button';
         btn.className = 'px-2 py-1 bg-slate-50 hover:bg-sky-100 border border-slate-200 hover:border-sky-400 rounded-lg text-xs flex items-center gap-1 transition';
         btn.innerHTML = `<span class="text-base">${st.icon}</span><span class="text-[11px] font-medium text-slate-700">${st.label}</span>`;
-        btn.title = '左鍵設為主貼圖，同時可插入內文';
         btn.addEventListener('click', () => {
           adminAnnSticker.value = st.icon;
           adminAnnContentEditor.focus();
@@ -2318,9 +2200,6 @@
       studentGradeModal.classList.remove('hidden');
     });
 
-    // ==========================================
-    // 🎓 學員年級總表管理邏輯
-    // ==========================================
     manageStudentsBtn.addEventListener('click', () => {
       if (!isAdminLoggedIn) return;
       studentGradeSearch.value = '';
@@ -2379,9 +2258,7 @@
             <select class="text-xs p-1.5 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-teal-500 font-medium student-grade-row-select" data-name="${name}">
               ${optionsHtml}
             </select>
-            <button type="button" class="bg-rose-600 hover:bg-rose-500 text-white px-2.5 py-1.5 rounded text-xs transition delete-student-grade-btn" data-name="${name}" title="從總表移除">
-              刪除
-            </button>
+            <button type="button" class="bg-rose-600 hover:bg-rose-500 text-white px-2.5 py-1.5 rounded text-xs transition delete-student-grade-btn" data-name="${name}">刪除</button>
           </div>
         `;
         studentGradeList.appendChild(row);
@@ -2514,7 +2391,7 @@
     });
 
     // ==========================================
-    // ⚡ 管理者特殊欄位：快速文字預約 / 取消功能（支援全形自動轉半形比對）
+    // ⚡ 管理者特殊欄位：快速文字預約 / 取消功能（修正日期空白解析與防覆蓋姓名）
     // ==========================================
     openQuickParseBtn.addEventListener('click', () => {
       if (!isAdminLoggedIn) return;
@@ -2535,7 +2412,7 @@
     });
 
     fillQuickExampleBtn.addEventListener('click', () => {
-      quickParseTextarea.value = '冬孜(張教練)\n11/14(六) 14:00-15:00(新增)';
+      quickParseTextarea.value = '瑀珊（張教練）\n11/7 （六）07:00-08:00\n11/14 (六) 07:00-08:00\n11/21 (六) 07:00-08:00 (新增)';
       quickParseTextarea.focus();
     });
 
@@ -2550,7 +2427,6 @@
       return clean;
     }
 
-    // 標準化學員與教練比對鍵值（全形轉半形、去空白、統一斜線）
     function normalizePersonKey(str) {
       return toHalfWidth(str).replace(/\s+/g, '');
     }
@@ -2558,7 +2434,6 @@
     submitQuickParseBtn.addEventListener('click', async () => {
       if (!isAdminLoggedIn) return;
       const rawText = quickParseTextarea.value;
-      // 先將每一行全形字元與符號全部轉成半形再進行解析
       const lines = rawText
         .split(/\r?\n/)
         .map(l => toHalfWidth(l))
@@ -2578,10 +2453,9 @@
       const tasks = [];
       const logs = [];
 
-      // 支援：
-      // 1) 11/14(六) 14:00-15:00(新增)
-      // 2) 11/14 14:00-15:00 冬孜(張教練)(新增)
-      const scheduleRegex = /^(\d{1,2})\/(\d{1,2})(?:\([^)]*\))?\s*(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})(?:\(([^)]*)\))?(.*)$/;
+      // 允許日期與星期括號之間有任意空白，例如：11/7 (六) 07:00-08:00 或 11/14(六) 14:00-15:00(新增)
+      const scheduleRegex = /^(\d{1,2})\s*\/\s*(\d{1,2})\s*(?:\([^)]*\))?\s*(\d{1,2})\s*:\s*(\d{2})\s*-\s*(\d{1,2})\s*:\s*(\d{2})\s*(?:\(([^)]*)\))?\s*(.*)$/;
+      const looksLikeDateOrTimeRegex = /^(\d{1,2}\s*\/\s*\d{1,2}|\d{1,2}\s*:\s*\d{2})/;
 
       lines.forEach((line, idx) => {
         const match = line.match(scheduleRegex);
@@ -2599,8 +2473,8 @@
           let taskCoach = currentCoach;
           let actionTextPool = `${parenAfterTime} ${extraTail}`.trim();
 
-          // 檢查時間後面是否直接帶入「選手姓名(教練名)」，例如：11/14(六) 14:00-15:00 冬孜(張教練)(新增)
-          const inlinePersonMatch = extraTail.match(/^([^\s()]+(?:\s*\/\s*[^\s()]+)*)\(([^()]+)\)(.*)$/);
+          // 支援在同一行時間後方直接附帶「選手姓名(教練名)」
+          const inlinePersonMatch = extraTail.match(/^([^\s()]+(?:\s*\/\s*[^\s()]+)*)\s*\(([^()]+)\)\s*(.*)$/);
           if (inlinePersonMatch && !/^(新增|取消|場地\s*[1-3])$/.test(inlinePersonMatch[1])) {
             taskStudent = toHalfWidth(inlinePersonMatch[1]);
             taskCoach = resolveCoachName(inlinePersonMatch[2]);
@@ -2668,13 +2542,15 @@
             timeNote,
             specifiedCourtIdx
           });
+        } else if (looksLikeDateOrTimeRegex.test(line)) {
+          // 防呆：只要該行看起來像日期或時間但格式不完整，絕不覆蓋上方的選手姓名與教練
+          logs.push({ ok: false, msg: `第 ${idx + 1} 行「${line}」日期或時間格式無法辨識（請確認格式如 11/7 (六) 07:00-08:00），已略過。` });
         } else {
-          // 標題行：冬孜(張教練) 或 以家/非非(彭教練) 或 冬孜
-          const headerMatch = line.match(/^(.+?)(?:\(([^()]+)\))?$/);
+          // 標題行：瑀珊 (張教練) 或 以家/非非(彭教練) 或 冬孜
+          const headerMatch = line.match(/^(.+?)\s*(?:\(([^()]+)\))?$/);
           if (headerMatch) {
             const parsedStudent = toHalfWidth(headerMatch[1]);
             const parsedCoachRaw = toHalfWidth(headerMatch[2] || '');
-            // 避免誤將純括號註記當作選手名
             if (parsedStudent) {
               currentStudent = parsedStudent;
               currentCoach = resolveCoachName(parsedCoachRaw);
@@ -2704,7 +2580,6 @@
         const normTaskCoach = normalizePersonKey(task.coach);
 
         if (task.action === 'add') {
-          // 檢查該時段任一場地是否已有同一位學員與教練（全形／半形皆視為同一人，不重複約另一個時段）
           const duplicatedSlots = [];
           const remainingSlotIndices = [];
 
@@ -2841,7 +2716,7 @@
 
       quickParseResult.innerHTML = '';
       if (logs.length === 0) {
-        quickParseResult.innerHTML = '<div class="text-slate-500">未偵測到可執行的日期時段行，請確認格式是否包含「日期 時間(新增/取消)」。</div>';
+        quickParseResult.innerHTML = '<div class="text-slate-500">未偵測到可執行的日期時段行，請確認格式是否包含「日期 時間」。</div>';
       } else {
         logs.forEach(item => {
           const div = document.createElement('div');
@@ -2871,7 +2746,7 @@
     });
 
     // ==========================================
-    // 📊 統計報表（僅當日統計 + 日期切換器 / 自訂日期區間）
+    // 📊 統計報表
     // ==========================================
     function getStatsTargetDates() {
       const range = statsRangeSelect.value;
@@ -3166,7 +3041,6 @@
       }
     }
 
-    // 📥 匯出當前對象報表
     exportExcelBtn.addEventListener('click', async () => {
       const range = statsRangeSelect.value;
       const targetDates = getStatsTargetDates();
@@ -3303,7 +3177,6 @@
       XLSX.writeFile(wb, `個練統計表_${target}_${fileDateSuffix}.xlsx`);
     });
 
-    // 📥 匯出全體學員總表 (.xlsx)
     exportAllStudentsExcelBtn.addEventListener('click', async () => {
       const range = statsRangeSelect.value;
       const targetDates = getStatsTargetDates();
@@ -3529,7 +3402,6 @@
           alert('密碼錯誤！');
         }
       } catch (e) {
-        console.error("驗證密碼失敗:", e);
         alert('連線資料庫驗證密碼發生錯誤，請檢查網路或資料庫權限！');
       }
     });
@@ -3681,9 +3553,6 @@
       }, 150);
     });
 
-    // ==========================================
-    // 🟡 日期分頁列（選取的當日日期底色為螢光黃）
-    // ==========================================
     function renderDateTabs() {
       dateTabsBar.innerHTML = '';
       const curr = new Date(currentDate);

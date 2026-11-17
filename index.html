@@ -783,6 +783,7 @@
           <ul class="text-[11px] text-slate-600 list-disc pl-4 space-y-0.5">
             <li>第一行填寫 <b>選手姓名(教練名)</b>，支援 1對2 合練如 <code>以家/非非(彭教練)</code>，年級將自動由總表帶入。</li>
             <li>第二行（可多行）填寫 <b>日期(星期) 時間(新增 或 取消)</b>，系統將自動尋找空場地完成預約或取消對應預約。</li>
+            <li>支援全形文字或符號（如 <code>１１／１４（六）１４：００－１５：００（新增）</code>），系統會自動轉為半形比對，避免重複預約。</li>
           </ul>
         </div>
 
@@ -1000,6 +1001,27 @@
       { icon: '🤝', label: '團隊合作' }
     ];
 
+    // ==========================================
+    // 🔄 全形文字與符號統一轉半形工具函式
+    // ==========================================
+    function toHalfWidth(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        // 全形 ASCII（包含數字０-９、英文Ａ-Ｚａ-ｚ、括號（）、斜線／、冒號：、減號－等）轉半形
+        .replace(/[\uFF01-\uFF5E]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+        // 全形空白轉半形空白
+        .replace(/\u3000/g, ' ')
+        // 各種破折號、波浪號統一轉半形減號 -
+        .replace(/[～~–—−‐‑‒―]/g, '-')
+        // 全形頓號、逗號統一轉半形逗號
+        .replace(/[、，]/g, ',')
+        // 清理斜線前後多餘空白（例如 "以家 / 非非" -> "以家/非非"）
+        .replace(/\s*\/\s*/g, '/')
+        // 連續空白壓縮為單一空白
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
     let currentDate = new Date().toISOString().split('T')[0];
     let selectedCells = new Set(); 
     let bookings = {}; 
@@ -1045,12 +1067,14 @@
     function normalizeCoachList(list) {
       return list.map(item => {
         if (typeof item === 'string') {
-          const def = DEFAULT_COACH_PROFILES[item] || { avatar: '🏸', tag: '專業教練', bio: '歡迎預約一對一或一對二個人練習。' };
-          return { name: item, rate1: 600, rate2: 400, ...def };
+          const cleanName = toHalfWidth(item);
+          const def = DEFAULT_COACH_PROFILES[cleanName] || { avatar: '🏸', tag: '專業教練', bio: '歡迎預約一對一或一對二個人練習。' };
+          return { name: cleanName, rate1: 600, rate2: 400, ...def };
         }
-        const def = DEFAULT_COACH_PROFILES[item.name] || { avatar: '🏸', tag: '專業教練', bio: '歡迎預約一對一或一對二個人練習。' };
+        const cleanName = toHalfWidth(item.name);
+        const def = DEFAULT_COACH_PROFILES[cleanName] || { avatar: '🏸', tag: '專業教練', bio: '歡迎預約一對一或一對二個人練習。' };
         return {
-          name: item.name,
+          name: cleanName,
           rate1: item.rate1 ?? 600,
           rate2: item.rate2 ?? 400,
           avatar: item.avatar || def.avatar,
@@ -1134,7 +1158,7 @@
     }
 
     function getSingleStudentGrade(studentName, fallbackGrade = '') {
-      const cleanName = (studentName || '').trim();
+      const cleanName = toHalfWidth(studentName);
       if (!cleanName) return '';
       if (Object.prototype.hasOwnProperty.call(studentGradeMap, cleanName)) {
         return studentGradeMap[cleanName] || '';
@@ -1143,10 +1167,10 @@
     }
 
     function getBookingGradeFromMaster(studentStr, fallbackGrade = '') {
-      const raw = (studentStr || '').trim();
+      const raw = toHalfWidth(studentStr);
       if (!raw) return '';
       if (raw.includes('/')) {
-        const names = raw.split('/').map(n => n.trim()).filter(n => n !== '');
+        const names = raw.split('/').map(n => toHalfWidth(n)).filter(n => n !== '');
         const grades = names.map(n => getSingleStudentGrade(n, '')).filter(g => g !== '');
         return grades.length > 0 ? grades.join('/') : (fallbackGrade || '');
       }
@@ -1269,8 +1293,9 @@
     }
 
     function getCoachObj(coachName) {
-      const found = coachList.find(c => c.name === coachName);
-      return found || { name: coachName || '無', rate1: 600, rate2: 400, avatar: '🏸', tag: '專業教練', bio: '' };
+      const clean = toHalfWidth(coachName);
+      const found = coachList.find(c => toHalfWidth(c.name) === clean);
+      return found || { name: clean || '無', rate1: 600, rate2: 400, avatar: '🏸', tag: '專業教練', bio: '' };
     }
 
     function setupFirestoreListener() {
@@ -1616,7 +1641,7 @@
 
     document.querySelectorAll('.ann-color-swatch').forEach(btn => {
       btn.addEventListener('mousedown', (e) => {
-        e.preventDefault(); // 保留編輯器內的文字選取狀態
+        e.preventDefault();
         applyTextColorChoice(btn.dataset.color);
       });
     });
@@ -1722,7 +1747,6 @@
       setAdminImageSize(240);
     });
 
-    // 綁定滑鼠與觸控拖拉縮放事件
     function bindDragResizeHandle(handleEl) {
       let isResizing = false;
       let startX = 0;
@@ -1849,7 +1873,6 @@
       modalAnnouncementTitle.innerText = ann.title || '球隊最新公告';
       modalAnnouncementUpdated.innerText = ann.updatedAt ? `更新時間：${ann.updatedAt}` : '';
 
-      // 套用公告內文文字大小、顏色與富文本內容
       modalAnnouncementBody.style.fontSize = ann.contentFontSize || '14px';
       modalAnnouncementBody.style.color = ann.contentColor || '#334155';
       if (ann.contentHtml && ann.contentHtml.trim() !== '') {
@@ -1858,7 +1881,6 @@
         modalAnnouncementBody.innerText = ann.content || '暫無公告內容。';
       }
 
-      // 套用附加貼圖 / 海報圖片尺寸與排版位置
       const layout = ann.imageLayout || 'bottom';
       const align = ann.imageAlign || 'center';
       const imgWidth = Number(ann.imageWidth) || 240;
@@ -1930,7 +1952,7 @@
 
       const diff = targetMs - Date.now();
       if (diff <= 0) {
-        const endText = cd.endMessage || '🎉 時間已到，活動開始！';
+        const endText = cd.endMessage || '🎉 活動已正式開始！';
         topCountdownTimer.innerText = endText;
         modalCountdownTimer.innerText = endText;
         return;
@@ -2103,7 +2125,6 @@
       adminAnnSticker.value = ann.sticker || '🏸';
       adminAnnTitle.value = ann.title || '';
 
-      // 載入富文本內容與預設文字大小、顏色
       const baseFontSize = ann.contentFontSize || '14px';
       const baseColor = ann.contentColor || '#334155';
       adminAnnContentEditor.style.fontSize = baseFontSize;
@@ -2117,7 +2138,6 @@
         adminAnnContentEditor.innerText = ann.content || '';
       }
 
-      // 載入圖片尺寸與排版設定
       currentAdminImageWidth = Number(ann.imageWidth) || 240;
       currentAdminImageLayout = ann.imageLayout || 'bottom';
       currentAdminImageAlign = ann.imageAlign || 'center';
@@ -2265,13 +2285,13 @@
         autoGradePreview.classList.add('hidden');
         return;
       }
-      const rawName = inputStudent.value.trim();
+      const rawName = toHalfWidth(inputStudent.value);
       if (!rawName) {
         autoGradePreview.classList.add('hidden');
         return;
       }
 
-      const names = rawName.split('/').map(n => n.trim()).filter(n => n !== '');
+      const names = rawName.split('/').map(n => toHalfWidth(n)).filter(n => n !== '');
       const statusParts = names.map(n => {
         const g = getSingleStudentGrade(n, '');
         return g ? `${n}：${g}` : `${n}：未設定`;
@@ -2289,9 +2309,9 @@
 
     quickOpenGradeMasterBtn.addEventListener('click', () => {
       if (!isAdminLoggedIn) return;
-      const rawName = inputStudent.value.trim();
+      const rawName = toHalfWidth(inputStudent.value);
       if (rawName) {
-        const firstUnset = rawName.split('/').map(n => n.trim()).find(n => n && !getSingleStudentGrade(n, ''));
+        const firstUnset = rawName.split('/').map(n => toHalfWidth(n)).find(n => n && !getSingleStudentGrade(n, ''));
         newStudentGradeName.value = firstUnset || rawName.split('/')[0].trim();
       }
       renderStudentGradeList();
@@ -2319,12 +2339,12 @@
 
     function renderStudentGradeList() {
       studentGradeList.innerHTML = '';
-      const keyword = studentGradeSearch.value.trim().toLowerCase();
+      const keyword = toHalfWidth(studentGradeSearch.value).toLowerCase();
       const filterGrade = studentGradeFilter.value;
 
       const entries = Object.entries(studentGradeMap)
         .filter(([name, grade]) => {
-          if (keyword && !name.toLowerCase().includes(keyword)) return false;
+          if (keyword && !toHalfWidth(name).toLowerCase().includes(keyword)) return false;
           if (filterGrade === 'UNSET') return !grade;
           if (filterGrade !== 'ALL') return grade === filterGrade;
           return true;
@@ -2389,7 +2409,7 @@
     }
 
     addStudentGradeBtn.addEventListener('click', () => {
-      const nameVal = newStudentGradeName.value.trim();
+      const nameVal = toHalfWidth(newStudentGradeName.value);
       const gradeVal = newStudentGradeSelect.value;
       if (!nameVal) {
         alert('請輸入學員姓名！');
@@ -2415,7 +2435,7 @@
         if (!dayData || !dayData.slots) return;
         Object.values(dayData.slots).forEach(slot => {
           if (slot.type === 'personal' && slot.student) {
-            const names = slot.student.split('/').map(n => n.trim()).filter(n => n !== '');
+            const names = toHalfWidth(slot.student).split('/').map(n => toHalfWidth(n)).filter(n => n !== '');
             names.forEach(n => {
               if (!Object.prototype.hasOwnProperty.call(studentGradeMap, n)) {
                 studentGradeMap[n] = slot.grade || '';
@@ -2494,7 +2514,7 @@
     });
 
     // ==========================================
-    // ⚡ 管理者特殊欄位：快速文字預約 / 取消功能
+    // ⚡ 管理者特殊欄位：快速文字預約 / 取消功能（支援全形自動轉半形比對）
     // ==========================================
     openQuickParseBtn.addEventListener('click', () => {
       if (!isAdminLoggedIn) return;
@@ -2519,29 +2539,30 @@
       quickParseTextarea.focus();
     });
 
-    function normalizeLineText(str) {
-      return str
-        .replace(/（/g, '(')
-        .replace(/）/g, ')')
-        .replace(/：/g, ':')
-        .replace(/[～~–—]/g, '-')
-        .trim();
-    }
-
     function resolveCoachName(rawCoach) {
       if (!rawCoach) return '';
-      const trimmed = rawCoach.trim();
-      const exact = coachList.find(c => c.name === trimmed);
+      const clean = toHalfWidth(rawCoach);
+      if (!clean) return '';
+      const exact = coachList.find(c => toHalfWidth(c.name) === clean);
       if (exact) return exact.name;
-      const withSuffix = coachList.find(c => c.name === `${trimmed}教練`);
+      const withSuffix = coachList.find(c => toHalfWidth(c.name) === `${clean}教練`);
       if (withSuffix) return withSuffix.name;
-      return trimmed;
+      return clean;
+    }
+
+    // 標準化學員與教練比對鍵值（全形轉半形、去空白、統一斜線）
+    function normalizePersonKey(str) {
+      return toHalfWidth(str).replace(/\s+/g, '');
     }
 
     submitQuickParseBtn.addEventListener('click', async () => {
       if (!isAdminLoggedIn) return;
       const rawText = quickParseTextarea.value;
-      const lines = rawText.split(/\r?\n/).map(l => normalizeLineText(l)).filter(l => l !== '');
+      // 先將每一行全形字元與符號全部轉成半形再進行解析
+      const lines = rawText
+        .split(/\r?\n/)
+        .map(l => toHalfWidth(l))
+        .filter(l => l !== '');
 
       if (lines.length === 0) {
         alert('請先貼上預約文字內容！');
@@ -2557,24 +2578,39 @@
       const tasks = [];
       const logs = [];
 
-      const scheduleRegex = /^(\d{1,2})[\/\-](\d{1,2})(?:\([^)]*\))?\s*(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})(?:\(([^)]*)\))?(.*)$/;
+      // 支援：
+      // 1) 11/14(六) 14:00-15:00(新增)
+      // 2) 11/14 14:00-15:00 冬孜(張教練)(新增)
+      const scheduleRegex = /^(\d{1,2})\/(\d{1,2})(?:\([^)]*\))?\s*(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})(?:\(([^)]*)\))?(.*)$/;
 
       lines.forEach((line, idx) => {
         const match = line.match(scheduleRegex);
         if (match) {
-          if (!currentStudent) {
-            logs.push({ ok: false, msg: `第 ${idx + 1} 行「${line}」缺少上方「選手姓名(教練名)」標題，已略過。` });
-            return;
-          }
-
           const month = parseInt(match[1], 10);
           const day = parseInt(match[2], 10);
           const startH = parseInt(match[3], 10);
           const startM = parseInt(match[4], 10);
           const endH = parseInt(match[5], 10);
           const endM = parseInt(match[6], 10);
-          const actionRaw = (match[7] || '').trim();
-          const extraTail = (match[8] || '').trim();
+          const parenAfterTime = toHalfWidth(match[7] || '');
+          const extraTail = toHalfWidth(match[8] || '');
+
+          let taskStudent = currentStudent;
+          let taskCoach = currentCoach;
+          let actionTextPool = `${parenAfterTime} ${extraTail}`.trim();
+
+          // 檢查時間後面是否直接帶入「選手姓名(教練名)」，例如：11/14(六) 14:00-15:00 冬孜(張教練)(新增)
+          const inlinePersonMatch = extraTail.match(/^([^\s()]+(?:\s*\/\s*[^\s()]+)*)\(([^()]+)\)(.*)$/);
+          if (inlinePersonMatch && !/^(新增|取消|場地\s*[1-3])$/.test(inlinePersonMatch[1])) {
+            taskStudent = toHalfWidth(inlinePersonMatch[1]);
+            taskCoach = resolveCoachName(inlinePersonMatch[2]);
+            actionTextPool = `${parenAfterTime} ${inlinePersonMatch[3] || ''}`.trim();
+          }
+
+          if (!taskStudent) {
+            logs.push({ ok: false, msg: `第 ${idx + 1} 行「${line}」缺少「選手姓名(教練名)」，請先在上方填寫選手姓名。` });
+            return;
+          }
 
           const dTest = new Date(baseYear, month - 1, day);
           if (dTest.getMonth() !== month - 1 || dTest.getDate() !== day) {
@@ -2583,19 +2619,18 @@
           }
           const targetDateStr = `${baseYear}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-          const combinedAction = `${actionRaw} ${extraTail}`;
           let action = 'add';
-          if (combinedAction.includes('取消')) {
+          if (actionTextPool.includes('取消')) {
             action = 'cancel';
-          } else if (combinedAction.includes('新增') || actionRaw === '') {
+          } else if (actionTextPool.includes('新增') || parenAfterTime === '') {
             action = 'add';
-          } else {
-            logs.push({ ok: false, msg: `第 ${idx + 1} 行無法辨識動作「(${actionRaw})」，請填寫 (新增) 或 (取消)。` });
+          } else if (parenAfterTime && !/場地\s*[1-3]/.test(parenAfterTime)) {
+            logs.push({ ok: false, msg: `第 ${idx + 1} 行無法辨識動作「(${parenAfterTime})」，請填寫 (新增) 或 (取消)。` });
             return;
           }
 
           let specifiedCourtIdx = null;
-          const courtMatch = combinedAction.match(/場地\s*([1-3])/);
+          const courtMatch = actionTextPool.match(/場地\s*([1-3])/);
           if (courtMatch) {
             specifiedCourtIdx = parseInt(courtMatch[1], 10) - 1;
           }
@@ -2626,18 +2661,24 @@
             targetDate: targetDateStr,
             displayDate: `${month}/${day}`,
             displayTime: `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}-${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`,
-            student: currentStudent,
-            coach: currentCoach,
+            student: taskStudent,
+            coach: taskCoach,
             action,
             slotIndices,
             timeNote,
             specifiedCourtIdx
           });
         } else {
-          const headerMatch = line.match(/^(.+?)(?:\((.+?)\))?$/);
+          // 標題行：冬孜(張教練) 或 以家/非非(彭教練) 或 冬孜
+          const headerMatch = line.match(/^(.+?)(?:\(([^()]+)\))?$/);
           if (headerMatch) {
-            currentStudent = headerMatch[1].trim();
-            currentCoach = resolveCoachName(headerMatch[2] || '');
+            const parsedStudent = toHalfWidth(headerMatch[1]);
+            const parsedCoachRaw = toHalfWidth(headerMatch[2] || '');
+            // 避免誤將純括號註記當作選手名
+            if (parsedStudent) {
+              currentStudent = parsedStudent;
+              currentCoach = resolveCoachName(parsedCoachRaw);
+            }
           }
         }
       });
@@ -2659,24 +2700,53 @@
         const candidateCourts = task.specifiedCourtIdx !== null ? [task.specifiedCourtIdx] : [0, 1, 2];
         const coachDisplay = task.coach ? `(${task.coach})` : '';
         const autoGrade = getBookingGradeFromMaster(task.student, '');
+        const normTaskStudent = normalizePersonKey(task.student);
+        const normTaskCoach = normalizePersonKey(task.coach);
 
         if (task.action === 'add') {
-          let alreadyExists = false;
-          for (let c = 0; c < COURTS.length; c++) {
-            const existing = daySlots[`${c}_${task.slotIndices[0]}`];
-            if (existing && existing.type === 'personal' && existing.student === task.student && (existing.coach || '') === task.coach) {
-              alreadyExists = true;
-              break;
+          // 檢查該時段任一場地是否已有同一位學員與教練（全形／半形皆視為同一人，不重複約另一個時段）
+          const duplicatedSlots = [];
+          const remainingSlotIndices = [];
+
+          task.slotIndices.forEach(sIdx => {
+            let foundCourt = null;
+            for (let c = 0; c < COURTS.length; c++) {
+              const existing = daySlots[`${c}_${sIdx}`];
+              if (
+                existing &&
+                existing.type === 'personal' &&
+                normalizePersonKey(existing.student) === normTaskStudent &&
+                normalizePersonKey(existing.coach || '') === normTaskCoach
+              ) {
+                foundCourt = c;
+                break;
+              }
             }
-          }
-          if (alreadyExists) {
-            logs.push({ ok: false, msg: `⚠️ ${task.displayDate} ${task.displayTime}【${task.student}${coachDisplay}】已存在相同預約，略過新增。` });
+            if (foundCourt !== null) {
+              duplicatedSlots.push(`${ALL_TIME_SLOTS[sIdx].replace(/\s~\s/g, '-')}(${COURTS[foundCourt]})`);
+            } else {
+              remainingSlotIndices.push(sIdx);
+            }
+          });
+
+          if (remainingSlotIndices.length === 0) {
+            logs.push({
+              ok: false,
+              msg: `⚠️ ${task.displayDate} ${duplicatedSlots.join('、')}【${task.student}${coachDisplay}】已存在相同預約，未重複新增其他場地。`
+            });
             return;
+          }
+
+          if (duplicatedSlots.length > 0) {
+            logs.push({
+              ok: false,
+              msg: `⚠️ ${task.displayDate} ${duplicatedSlots.join('、')}【${task.student}${coachDisplay}】已存在預約，已略過該時段。`
+            });
           }
 
           let chosenCourtForAll = null;
           for (const cIdx of candidateCourts) {
-            const allFree = task.slotIndices.every(sIdx => !daySlots[`${cIdx}_${sIdx}`]);
+            const allFree = remainingSlotIndices.every(sIdx => !daySlots[`${cIdx}_${sIdx}`]);
             if (allFree) {
               chosenCourtForAll = cIdx;
               break;
@@ -2684,7 +2754,7 @@
           }
 
           if (chosenCourtForAll !== null) {
-            task.slotIndices.forEach(sIdx => {
+            remainingSlotIndices.forEach(sIdx => {
               daySlots[`${chosenCourtForAll}_${sIdx}`] = {
                 type: 'personal',
                 student: task.student,
@@ -2702,7 +2772,7 @@
           } else {
             let bookedCourts = [];
             let failedSlots = [];
-            task.slotIndices.forEach(sIdx => {
+            remainingSlotIndices.forEach(sIdx => {
               const freeCourt = candidateCourts.find(cIdx => !daySlots[`${cIdx}_${sIdx}`]);
               if (freeCourt !== undefined) {
                 daySlots[`${freeCourt}_${sIdx}`] = {
@@ -2735,8 +2805,12 @@
             for (const cIdx of candidateCourts) {
               const key = `${cIdx}_${sIdx}`;
               const existing = daySlots[key];
-              if (existing && existing.type === 'personal' && existing.student === task.student) {
-                if (!task.coach || (existing.coach || '') === task.coach) {
+              if (
+                existing &&
+                existing.type === 'personal' &&
+                normalizePersonKey(existing.student) === normTaskStudent
+              ) {
+                if (!normTaskCoach || normalizePersonKey(existing.coach || '') === normTaskCoach) {
                   delete daySlots[key];
                   cancelledCount++;
                   cancelledDetails.push(`${COURTS[cIdx]}`);
@@ -2910,7 +2984,7 @@
           if (!dayData || !dayData.slots) return;
           Object.values(dayData.slots).forEach(slot => {
             if (slot.type === 'personal' && slot.student) {
-              const names = slot.student.split('/').map(n => n.trim()).filter(n => n !== '');
+              const names = toHalfWidth(slot.student).split('/').map(n => toHalfWidth(n)).filter(n => n !== '');
               names.forEach(n => studentSet.add(n));
             }
           });
@@ -3013,9 +3087,9 @@
         Object.keys(daySlots).forEach(sKey => {
           const slot = daySlots[sKey];
           if (slot.type === 'personal' && slot.student) {
-            const rawStudentStr = slot.student;
+            const rawStudentStr = toHalfWidth(slot.student);
             const hasSlash = rawStudentStr.includes('/');
-            const studentList = hasSlash ? rawStudentStr.split('/').map(n => n.trim()).filter(n => n !== '') : [rawStudentStr.trim()];
+            const studentList = hasSlash ? rawStudentStr.split('/').map(n => toHalfWidth(n)).filter(n => n !== '') : [rawStudentStr];
             const noteStr = slot.timeNote || '';
             
             const is1on2 = hasSlash;
@@ -3023,7 +3097,7 @@
             const unitRate = is1on2 ? coachObj.rate2 : coachObj.rate1;
 
             studentList.forEach(singleStudent => {
-              const isMatch = (type === 'coach' && slot.coach === target) || (type === 'student' && singleStudent === target);
+              const isMatch = (type === 'coach' && toHalfWidth(slot.coach) === toHalfWidth(target)) || (type === 'student' && singleStudent === toHalfWidth(target));
               if (isMatch) {
                 const [cIdx, tIdx] = sKey.split('_').map(Number);
                 const slotTypeLabel = is1on2 ? '1對2' : '1對1';
@@ -3113,16 +3187,16 @@
         Object.keys(dayData.slots).forEach(sKey => {
           const slot = dayData.slots[sKey];
           if (slot.type === 'personal' && slot.student) {
-            const rawStudentStr = slot.student;
+            const rawStudentStr = toHalfWidth(slot.student);
             const hasSlash = rawStudentStr.includes('/');
-            const studentList = hasSlash ? rawStudentStr.split('/').map(n => n.trim()).filter(n => n !== '') : [rawStudentStr.trim()];
+            const studentList = hasSlash ? rawStudentStr.split('/').map(n => toHalfWidth(n)).filter(n => n !== '') : [rawStudentStr];
             const is1on2 = hasSlash;
             const coachName = slot.coach || '無';
             const coachObj = getCoachObj(coachName);
             const unitRate = is1on2 ? coachObj.rate2 : coachObj.rate1;
 
             studentList.forEach(singleStudent => {
-              const isMatch = (type === 'coach' && coachName === target) || (type === 'student' && singleStudent === target);
+              const isMatch = (type === 'coach' && toHalfWidth(coachName) === toHalfWidth(target)) || (type === 'student' && singleStudent === toHalfWidth(target));
               if (isMatch) {
                 const [cIdx, tIdx] = sKey.split('_').map(Number);
                 const dObj = new Date(dStr);
@@ -3247,9 +3321,9 @@
         Object.keys(dayData.slots).forEach(sKey => {
           const slot = dayData.slots[sKey];
           if (slot.type === 'personal' && slot.student) {
-            const rawStudentStr = slot.student;
+            const rawStudentStr = toHalfWidth(slot.student);
             const hasSlash = rawStudentStr.includes('/');
-            const studentList = hasSlash ? rawStudentStr.split('/').map(n => n.trim()).filter(n => n !== '') : [rawStudentStr.trim()];
+            const studentList = hasSlash ? rawStudentStr.split('/').map(n => toHalfWidth(n)).filter(n => n !== '') : [rawStudentStr];
             const is1on2 = hasSlash;
             const coachName = slot.coach || '無';
             const coachObj = getCoachObj(coachName);
@@ -3379,7 +3453,7 @@
         const opt = document.createElement('option');
         opt.value = c.name;
         opt.innerText = `${c.name} (1v1:$${c.rate1}/1v2:$${c.rate2})`;
-        if (c.name === selectedCoach) opt.selected = true;
+        if (toHalfWidth(c.name) === toHalfWidth(selectedCoach)) opt.selected = true;
         selectCoach.appendChild(opt);
       });
 
@@ -3394,9 +3468,9 @@
     selectCoach.addEventListener('change', (e) => {
       if (e.target.value === '__ADD_NEW_COACH__') {
         const newCoachName = prompt('請輸入新教練的名稱：');
-        if (newCoachName && newCoachName.trim() !== '') {
-          const trimmed = newCoachName.trim();
-          if (!coachList.some(c => c.name === trimmed)) {
+        if (newCoachName && toHalfWidth(newCoachName) !== '') {
+          const trimmed = toHalfWidth(newCoachName);
+          if (!coachList.some(c => toHalfWidth(c.name) === trimmed)) {
             coachList.push({
               name: trimmed,
               rate1: 600,
@@ -3496,7 +3570,7 @@
       coachManageList.querySelectorAll('.save-coach-edit').forEach(btn => {
         btn.addEventListener('click', (e) => {
           const idx = e.target.dataset.index;
-          const nameVal = document.getElementById(`coach-name-${idx}`).value.trim();
+          const nameVal = toHalfWidth(document.getElementById(`coach-name-${idx}`).value);
           const r1Val = parseFloat(document.getElementById(`coach-r1-${idx}`).value) || 0;
           const r2Val = parseFloat(document.getElementById(`coach-r2-${idx}`).value) || 0;
           if (nameVal) {
@@ -3528,11 +3602,11 @@
     }
 
     addCoachSubmitBtn.addEventListener('click', () => {
-      const nameVal = newCoachInput.value.trim();
+      const nameVal = toHalfWidth(newCoachInput.value);
       const r1Val = parseFloat(newCoach1on1.value) || 600;
       const r2Val = parseFloat(newCoach1on2.value) || 400;
 
-      if (nameVal && !coachList.some(c => c.name === nameVal)) {
+      if (nameVal && !coachList.some(c => toHalfWidth(c.name) === nameVal)) {
         coachList.push({
           name: nameVal,
           rate1: r1Val,
@@ -3592,7 +3666,6 @@
       renderGrid();
     });
 
-    // 視窗螢幕尺寸變化時自動調整排版
     let resizeTimer = null;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
@@ -3645,10 +3718,10 @@
     }
 
     function formatStudentNamesHtml(rawStudent) {
-      const text = (rawStudent || '').trim();
+      const text = toHalfWidth(rawStudent);
       if (!text) return '';
       if (text.includes('/')) {
-        const parts = text.split('/').map(s => s.trim()).filter(Boolean);
+        const parts = text.split('/').map(s => toHalfWidth(s)).filter(Boolean);
         return parts.map((name, i) => i < parts.length - 1 ? `${name} /` : name).join('<br>');
       }
       return text;
@@ -3956,9 +4029,9 @@
       }
 
       let studentVal = '';
-      if (currentBookingType === 'personal') studentVal = inputStudent.value.trim();
+      if (currentBookingType === 'personal') studentVal = toHalfWidth(inputStudent.value);
       else if (currentBookingType === 'club') studentVal = '社團包場';
-      else if (currentBookingType === 'other') studentVal = inputOtherNote.value.trim() || '其他用途';
+      else if (currentBookingType === 'other') studentVal = toHalfWidth(inputOtherNote.value) || '其他用途';
 
       const autoGrade = currentBookingType === 'personal' ? getBookingGradeFromMaster(studentVal, '') : '';
 
@@ -3966,9 +4039,9 @@
         type: currentBookingType,
         student: studentVal,
         grade: autoGrade,
-        coach: currentBookingType === 'personal' ? selectCoach.value.trim() : '',
-        timeNote: currentBookingType === 'personal' ? inputTimeNote.value.trim() : '',
-        otherNote: currentBookingType === 'other' ? inputOtherNote.value.trim() : ''
+        coach: currentBookingType === 'personal' ? toHalfWidth(selectCoach.value) : '',
+        timeNote: currentBookingType === 'personal' ? toHalfWidth(inputTimeNote.value) : '',
+        otherNote: currentBookingType === 'other' ? toHalfWidth(inputOtherNote.value) : ''
       };
 
       if (currentBookingType === 'personal' && !bookingPayload.student) {

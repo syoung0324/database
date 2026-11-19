@@ -25,7 +25,6 @@ const STICKER_CATALOG = [
   { icon: '🤝', label: '團隊合作' }
 ];
 
-// 全形文字與符號統一轉半形工具函式
 function toHalfWidth(str) {
   if (str === null || str === undefined) return '';
   return String(str)
@@ -63,45 +62,6 @@ const tabSessionId = sessionStorage.getItem('badminton_tab_session_id') ||
   `sess_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 sessionStorage.setItem('badminton_tab_session_id', tabSessionId);
 
-const DEFAULT_COACH_PROFILES = {
-  '彭教練': { avatar: '🥇', tag: '基礎與戰術指導', bio: '專注基本功動作定型、單雙打輪轉觀念與穩定度訓練。' },
-  '盧教練': { avatar: '⚡', tag: '敏捷步伐與控球', bio: '擅長場上步伐啟動、網前細膩手感與節奏變化指導。' },
-  '陳教練': { avatar: '🔥', tag: '進階殺球與體能', bio: '強化後場進攻發力、連貫防守與實戰對抗訓練。' },
-  '張教練': { avatar: '🎯', tag: '精準落點與球路', bio: '注重擊球品質、發接發搶攻與比賽心理素質培養。' },
-  '方教練': { avatar: '🏸', tag: '青少年啟蒙培訓', bio: '耐心引導羽球興趣、協調性建立與標準握拍揮拍。' }
-};
-
-let coachList = JSON.parse(localStorage.getItem('badminton_coach_list_v2')) || [
-  { name: '彭教練', rate1: 600, rate2: 400, ...DEFAULT_COACH_PROFILES['彭教練'] },
-  { name: '盧教練', rate1: 600, rate2: 400, ...DEFAULT_COACH_PROFILES['盧教練'] },
-  { name: '陳教練', rate1: 600, rate2: 400, ...DEFAULT_COACH_PROFILES['陳教練'] },
-  { name: '張教練', rate1: 600, rate2: 400, ...DEFAULT_COACH_PROFILES['張教練'] },
-  { name: '方教練', rate1: 600, rate2: 400, ...DEFAULT_COACH_PROFILES['方教練'] }
-];
-
-function normalizeCoachList(list) {
-  return list.map(item => {
-    if (typeof item === 'string') {
-      const cleanName = toHalfWidth(item);
-      const def = DEFAULT_COACH_PROFILES[cleanName] || { avatar: '🏸', tag: '專業教練', bio: '歡迎預約一對一或一對二個人練習。' };
-      return { name: cleanName, rate1: 600, rate2: 400, ...def };
-    }
-    const cleanName = toHalfWidth(item.name);
-    const def = DEFAULT_COACH_PROFILES[cleanName] || { avatar: '🏸', tag: '專業教練', bio: '歡迎預約一對一或一對二個人練習。' };
-    return {
-      name: cleanName,
-      rate1: item.rate1 ?? 600,
-      rate2: item.rate2 ?? 400,
-      avatar: item.avatar || def.avatar,
-      tag: item.tag || def.tag,
-      bio: item.bio || def.bio
-    };
-  });
-}
-
-coachList = normalizeCoachList(coachList);
-localStorage.setItem('badminton_coach_list_v2', JSON.stringify(coachList));
-
 function getDefaultCountdownTarget() {
   const d = new Date();
   d.setDate(d.getDate() + 7);
@@ -134,13 +94,6 @@ let boardSettings = JSON.parse(localStorage.getItem('badminton_board_settings_v1
     targetDateTime: getDefaultCountdownTarget(),
     endMessage: '🎉 活動已正式開始，大家加油！🏸'
   }
-};
-
-let studentGradeMap = JSON.parse(localStorage.getItem('badminton_student_grades_v1')) || {
-  '以家': '三年級',
-  '峻誠': '四年級',
-  '展誠': '二年級',
-  '宇澄': '一年級'
 };
 
 // ==========================================
@@ -328,17 +281,8 @@ const inputOtherNote = document.getElementById('input-other-note');
 const modalSlotsSummary = document.getElementById('modal-slots-summary');
 
 // ==========================================
-// 資料持久化與 Firestore 同步函式
+// 公告持久化與共用 Firestore 監聽
 // ==========================================
-function saveCoachData() {
-  coachList = normalizeCoachList(coachList);
-  localStorage.setItem('badminton_coach_list_v2', JSON.stringify(coachList));
-  if (window.db) {
-    const coachDocRef = window.fsDoc(window.db, "settings", "coaches");
-    window.fsSetDoc(coachDocRef, { list: coachList }).catch(err => console.error("教練資料儲存失敗:", err));
-  }
-}
-
 function saveBoardSettings() {
   localStorage.setItem('badminton_board_settings_v1', JSON.stringify(boardSettings));
   if (window.db) {
@@ -349,40 +293,6 @@ function saveBoardSettings() {
     });
   }
   return Promise.resolve();
-}
-
-function saveStudentGradeData() {
-  localStorage.setItem('badminton_student_grades_v1', JSON.stringify(studentGradeMap));
-  if (window.db) {
-    const gradeDocRef = window.fsDoc(window.db, "settings", "studentGrades");
-    window.fsSetDoc(gradeDocRef, { map: studentGradeMap }).catch(err => console.error("學員年級總表儲存失敗:", err));
-  }
-}
-
-function getSingleStudentGrade(studentName, fallbackGrade = '') {
-  const cleanName = toHalfWidth(studentName);
-  if (!cleanName) return '';
-  if (Object.prototype.hasOwnProperty.call(studentGradeMap, cleanName)) {
-    return studentGradeMap[cleanName] || '';
-  }
-  return fallbackGrade || '';
-}
-
-function getBookingGradeFromMaster(studentStr, fallbackGrade = '') {
-  const raw = toHalfWidth(studentStr);
-  if (!raw) return '';
-  if (raw.includes('/')) {
-    const names = raw.split('/').map(n => toHalfWidth(n)).filter(n => n !== '');
-    const grades = names.map(n => getSingleStudentGrade(n, '')).filter(g => g !== '');
-    return grades.length > 0 ? grades.join('/') : (fallbackGrade || '');
-  }
-  return getSingleStudentGrade(raw, fallbackGrade);
-}
-
-function getCoachObj(coachName) {
-  const clean = toHalfWidth(coachName);
-  const found = coachList.find(c => toHalfWidth(c.name) === clean);
-  return found || { name: clean || '無', rate1: 600, rate2: 400, avatar: '🏸', tag: '專業教練', bio: '' };
 }
 
 function setupOnlinePresence() {
@@ -423,28 +333,6 @@ function setupOnlinePresence() {
   });
 }
 
-function setupCoachFirestoreListener() {
-  if (!window.db) return;
-  if (coachUnsubscribe) coachUnsubscribe();
-
-  const coachDocRef = window.fsDoc(window.db, "settings", "coaches");
-  coachUnsubscribe = window.fsOnSnapshot(coachDocRef, (docSnap) => {
-    if (docSnap.exists() && Array.isArray(docSnap.data().list)) {
-      coachList = normalizeCoachList(docSnap.data().list);
-      localStorage.setItem('badminton_coach_list_v2', JSON.stringify(coachList));
-      if (!coachManageModal.classList.contains('hidden')) {
-        renderCoachManageList();
-      }
-      renderPublicAnnouncementUI();
-      renderGrid();
-    } else {
-      saveCoachData();
-    }
-  }, (err) => {
-    console.error("教練 Firestore 監聽失敗:", err);
-  });
-}
-
 function setupBoardFirestoreListener() {
   if (!window.db) {
     renderPublicAnnouncementUI();
@@ -473,27 +361,6 @@ function setupBoardFirestoreListener() {
     console.error("公告與倒數設定監聽失敗:", err);
     renderPublicAnnouncementUI();
     startCountdownLoop();
-  });
-}
-
-function setupStudentGradeFirestoreListener() {
-  if (!window.db) return;
-  if (studentGradeUnsubscribe) studentGradeUnsubscribe();
-
-  const gradeDocRef = window.fsDoc(window.db, "settings", "studentGrades");
-  studentGradeUnsubscribe = window.fsOnSnapshot(gradeDocRef, (docSnap) => {
-    if (docSnap.exists() && docSnap.data().map && typeof docSnap.data().map === 'object') {
-      studentGradeMap = docSnap.data().map;
-      localStorage.setItem('badminton_student_grades_v1', JSON.stringify(studentGradeMap));
-      if (!studentGradeModal.classList.contains('hidden')) {
-        renderStudentGradeList();
-      }
-      updateAutoGradePreview();
-    } else {
-      saveStudentGradeData();
-    }
-  }, (err) => {
-    console.error("學員年級總表 Firestore 監聽失敗:", err);
   });
 }
 

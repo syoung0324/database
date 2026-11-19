@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.grid-scroll::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.grid-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+.grid-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.grid-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 20;
+}
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+@keyframes bounceMarquee {
+  0% { transform: translateX(8%); }
+  100% { transform: translateX(-8%); }
+}
+.animate-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: bounceMarquee 6s ease-in-out infinite alternate;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+@keyframes floatSticker {
+  0%, 100% { transform: translateY(0px) rotate(-2deg); }
+  50% { transform: translateY(-4px) rotate(2deg); }
+}
+.sticker-bounce {
+  display: inline-block;
+  animation: floatSticker 2.6s ease-in-out infinite;
+}
+
+#admin-ann-content-editor:empty:before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  pointer-events: none;
+}
+#admin-ann-content-editor {
+  min-height: 96px;
+  max-height: 220px;
+  overflow-y: auto;
+  word-break: break-word;
+}
+
+.resize-handle-se {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  width: 18px;
+  height: 18px;
+  background: #0284c7;
+  border: 2px solid #ffffff;
+  border-radius: 9999px;
+  cursor: nwse-resize;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 15;
+  touch-action: none;
+}
+
+.resize-handle-e {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 28px;
+  background: #0284c7;
+  border: 2px solid #ffffff;
+  border-radius: 9999px;
+  cursor: ew-resize;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  z-index: 15;
+  touch-action: none;
+}
